@@ -21,4 +21,4 @@ services:
       - /dev/nvidia-modeset
       - /dev/nvidiactl
       - /dev/nvidia0
-    command: -f --listen
+    command: -f --api --listen
