@@ -14,7 +14,7 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - ./models:/models/Stable-diffusion
+      - ./models:/stable-diffusion-webui/models/Stable-diffusion
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
