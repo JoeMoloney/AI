@@ -1,12 +1,13 @@
-I decided I wanted to experiment with AI considering it's everywhere including electric toothbrushes (for some reason - https://www.oralb.co.uk/en-gb/product-collections/genius-x).
+I decided I wanted to experiment with AI considering it's everywhere including electric toothbrushes (for some reason): https://www.oralb.co.uk/en-gb/product-collections/genius-x)
 
-Although I wouldn't be able to build my own models, I wanted to experiment and learn how to spin up services to run models against my local hardware.
+So here's a repo with configurations to run AI based services through the Docker Container Engine. 
+I want to make the process as painless as possible and as close to a one-click solution for anyone to try if they got curious.
 
 Hardware Specs:
-neofetch:
-![alt text][neofetch]
 
-[neofetch]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/neofetch.png "Logo Title Text 2"
+![NeoFetch Screenshot][neofetch_img]
+
+[neofetch_img]: https://github.com/JoeMoloney/AI/blob/master/images/neofetch.png "Logo Title Text 2"
 
 Inspiration / Sources: 
 Stable Diffusion Service: https://github.com/AUTOMATIC1111/stable-diffusion-webui
