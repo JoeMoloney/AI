@@ -1,3 +1,4 @@
 automatic1111/models/
 automatic1111/.cache/
 open-webui/data/*
+searxng/valkey-data
