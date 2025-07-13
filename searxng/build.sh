@@ -1,1 +1,1 @@
-docker build -D --progress=plain -t searxng -f Dockerfile .
+docker build -D --progress=plain --no-cache -t searxng -f Dockerfile .
