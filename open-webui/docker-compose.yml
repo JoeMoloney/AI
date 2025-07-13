@@ -14,8 +14,8 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - ./open-webui/ollama:/root/.ollama
-      - ./open-webui:/app/backend/data
+      - ./data/ollama:/root/.ollama
+      - ./data:/app/backend/data
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
