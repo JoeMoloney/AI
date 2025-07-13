@@ -1,0 +1,66 @@
+services:
+  caddy:
+    container_name: caddy
+    image: docker.io/library/caddy:2-alpine
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-data:/data:rw
+      - ./caddy-config:/config:rw
+    environment:
+      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
+      - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  valkey:
+    container_name: valkey
+    image: docker.io/valkey/valkey:8-alpine
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: unless-stopped
+    networks:
+      - searxng_net
+    volumes:
+      - ./valkey-data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  searxng:
+    container_name: searxng
+    image: searxng
+    restart: unless-stopped
+    networks:
+      - searxng_net
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+      - ./searxng-data:/var/cache/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+    # depends_on:
+    #   valkey: 
+    #     condition: service_started
+    #   caddy:
+    #     condition: service_started
+
+networks:
+  searxng_net:
+
+volumes:
+  caddy-data:
+  caddy-config:
+  valkey-data:
+  searxng-data:
