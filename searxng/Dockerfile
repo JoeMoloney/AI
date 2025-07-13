@@ -6,7 +6,7 @@ WORKDIR /
 
 #Install Packages
 RUN apt-get update \
-    && apt-get -y install sudo pipx python3-dev python3-babel python3-venv python-is-python3 uwsgi uwsgi-plugin-python3 git build-essential libxslt-dev zlib1g-dev libffi-dev libssl-dev
+    && apt-get -y install sudo python3-dev python3-babel python3-venv python-is-python3 uwsgi uwsgi-plugin-python3 git build-essential libxslt-dev zlib1g-dev libffi-dev libssl-dev python3-pip
 
 #Create User
 RUN sudo -H useradd --shell /bin/bash --system \
@@ -22,14 +22,19 @@ RUN sudo -H -u searxng -i \
     && python3 -m venv "/usr/local/searxng/searx-pyenv" \
     && echo ". /usr/local/searxng/searx-pyenv/bin/activate" >> "/usr/local/searxng/.profile"
 
+ENV PATH="/usr/local/searxng/searx-pyenv/bin:$PATH"
+
 #Check VirtualEnv is sourced from login (~/.profile)
 RUN sudo -H -u searxng -i \ 
     && command -v python && python --version
 
 #Update pip boilerplate
-RUN pipx install pipx setuptools wheel pyyaml
+RUN pip install pip \
+    && pip install setuptools \
+    && pip install wheel \
+    && pip install pyyaml
 
 #Install SearXNG into virtualenv
-RUN searxng -i \
+RUN sudo -H -u searxng -i \
     && cd "/usr/local/searxng/searxng-src" \
     && pip install --use-pep517 --no-build-isolation -e .
