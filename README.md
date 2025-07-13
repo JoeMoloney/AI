@@ -12,6 +12,11 @@ Current Services:
 WIP:
 - SearXNG (w/ValKey & Caddy)
 
+Guides:
+- Open-WebUI: https://docs.openwebui.com/
+- SearXNG: https://docs.searxng.org/admin/installation-searxng.html
+- Automatic1111: https://github.com/AUTOMATIC1111/stable-diffusion-webui
+
 Hardware Specs:
 
 ![NeoFetch Screenshot][neofetch_img]
