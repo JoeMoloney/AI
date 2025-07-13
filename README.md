@@ -9,6 +9,9 @@ Current Services:
 - Open-WebUI (with Ollama Integration)
 - Automatic1111 StableDiffusion
 
+WIP:
+- SearXNG (w/ValKey & Caddy)
+
 Hardware Specs:
 
 ![NeoFetch Screenshot][neofetch_img]
