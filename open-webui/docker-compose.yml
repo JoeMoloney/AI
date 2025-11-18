@@ -7,6 +7,8 @@ services:
       - "3000:8080"
     networks:
       - ai_net
+    environment:
+      - WEBUI_AUTH=False
     deploy:
       resources:
         reservations:
@@ -16,8 +18,8 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - ./data/ollama:/root/.ollama
-      - ./data:/app/backend/data
+      - /home/ol-randals/M2/docker_data/open-webui/ollama:/root/.ollama
+      - /home/ol-randals/M2/docker_data/open-webui/data:/app/backend/data
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
