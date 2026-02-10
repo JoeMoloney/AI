@@ -3,10 +3,6 @@ services:
     image: ghcr.io/open-webui/open-webui:ollama
     container_name: open-webui
     restart: always
-    ports:
-      - "3000:8080"
-    networks:
-      - ai_net
     environment:
       - WEBUI_AUTH=False
     deploy:
@@ -18,17 +14,12 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - /home/ol-randals/M2/docker_data/open-webui/ollama:/root/.ollama
-      - /home/ol-randals/M2/docker_data/open-webui/data:/app/backend/data
+      - ${OPENWEBUI_OLLAMA_DATA}:/root/.ollama
+      - ${OPENWEBUI_OLLAMA_BACKEND_DATA}:/app/backend/data
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
       - /dev/nvidia-modeset
       - /dev/nvidiactl
       - /dev/nvidia0
-
-volumes:
-  ollama:
-  open-webui:
-networks:
-  ai_net:
+    network_mode: "host"
