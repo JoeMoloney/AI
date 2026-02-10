@@ -6,14 +6,18 @@ I wanted to make this process as smooth as possible should I distro hop and if a
 
 I will update this with different services as I experiment and learn.
 
-# # Current Services:
+## Current Services
 - Open-WebUI (with Ollama Integration)
 - Automatic1111 StableDiffusion
 
-# # WIP:
+## WIP
 - SearXNG
 
-# # My Hardware & OS Specs:
+## Hopes & Dreams
+Multiple smaller AI models that will communicate together and research the users prompt using SearXNG private web access. They shall be known as:
+> **_The Council_**
+
+## My Hardware & OS Specs:
 
 + **OS:** Linux Mint 22.3 x86_64
 + **Kernel:** 6.17.0-14-generic
@@ -25,7 +29,7 @@ I will update this with different services as I experiment and learn.
 + **GPU 1:** Intel CometLake-S GT2 (UHD Graphics 630)
 + **RAM *(Acquired before the price gouging)*:** 2x16GB (31921 MiB) @2133MHz
 
-# # Inspiration / Sources / Guides: 
+## Inspiration / Sources / Guides: 
 - Open-WebUI Service: https://github.com/open-webui/open-webui
 - Automatic1111 Stable Diffusion Service: https://github.com/AUTOMATIC1111/stable-diffusion-webui
 - SearXNG Service: https://docs.searxng.org/admin/installation-searxng.html
