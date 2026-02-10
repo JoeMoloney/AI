@@ -6,6 +6,8 @@ I wanted to make this process as smooth as possible should I distro hop and if a
 
 I will update this with different services as I experiment and learn.
 
+**_Check through the subfolders for each individual service_**
+
 ## Current Services
 - Open-WebUI (with Ollama Integration)
 - Automatic1111 StableDiffusion
