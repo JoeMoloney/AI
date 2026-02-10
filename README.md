@@ -35,3 +35,4 @@ Multiple smaller AI models that will communicate together and research the users
 - Open-WebUI Service: https://github.com/open-webui/open-webui
 - Automatic1111 Stable Diffusion Service: https://github.com/AUTOMATIC1111/stable-diffusion-webui
 - SearXNG Service: https://docs.searxng.org/admin/installation-searxng.html
+- PewDiePie: https://github.com/pewdiepie-archdaemon
