@@ -1,0 +1,2 @@
+VSCode Continue Plugin w/local LLM:
+https://docs.continue.dev/guides/ollama-guide
