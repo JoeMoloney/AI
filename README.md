@@ -16,6 +16,7 @@ I will update this with different services as I experiment and learn.
 
 ## WIP
 - Hook up Automatic1111 to Open-WebUI 
+- Claude Code / Codex for access from a terminal
 
 ## Hopes & Dreams
 Multiple smaller AI models that will communicate together and research the users prompt using SearXNG private web access. They shall be known as:
