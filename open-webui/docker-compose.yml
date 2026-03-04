@@ -5,12 +5,12 @@ services:
     restart: always
     environment:
       - WEBUI_AUTH=False
-      - OLLAMA_BASE_URL=http://localhost:11434
-    ports:
-      - "3000:8080"
+      - OLLAMA_BASE_URL=http://ollama:11434
+    ports: [ "3000:8080" ]
     volumes:
       - ${OPENWEBUI_DATA}:/app/backend/data
-    network_mode: "host"
+    networks:
+      - ai_network
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -33,4 +33,9 @@ services:
       - /dev/nvidia-modeset
       - /dev/nvidiactl
       - /dev/nvidia0
-    network_mode: "host"
+    networks:
+      - ai_network
+
+networks:
+  ai_network:
+    driver: bridge
