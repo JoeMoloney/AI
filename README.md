@@ -9,11 +9,13 @@ I will update this with different services as I experiment and learn.
 **_Check through the subfolders for each individual service_**
 
 ## Current Services
-- Open-WebUI (with Ollama Integration)
+- Open-WebUI
+- Ollama
+- SearXNG
 - Automatic1111 StableDiffusion
 
 ## WIP
-- SearXNG
+- Hook up Automatic1111 to Open-WebUI 
 
 ## Hopes & Dreams
 Multiple smaller AI models that will communicate together and research the users prompt using SearXNG private web access. They shall be known as:
