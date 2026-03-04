@@ -12,5 +12,5 @@ Standard Docker installation on Linux Mint
 + Depending where you want to store the containers data on your system
 + + update the `.env` file accordingly`
 + + + I've stored mine on a NVME M.2 that is symlinked to my `/home/` directory for ease of access
-+ Navigate into the open-webui folder of this repo and run: `docker compose up open-webui`
-+ + `Ctrl C` to gracefully shutdown the container when you're finished
++ From the open-webui folder run: `docker compose up` to start up the containers
++ + `docker compose down` to gracefully shutdown the containers when you're finished
