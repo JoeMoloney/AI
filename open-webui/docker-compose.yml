@@ -2,7 +2,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
-    restart: always
+    restart: unless-stopped
     environment:
       - WEBUI_AUTH=False
       - OLLAMA_BASE_URL=http://ollama:11434
@@ -11,10 +11,11 @@ services:
       - ${OPENWEBUI_DATA}:/app/backend/data
     networks:
       - ai_network
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    restart: always
+    restart: unless-stopped
     environment:
       - OLLAMA_VULKAN=1
     deploy:
