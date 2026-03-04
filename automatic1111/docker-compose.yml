@@ -5,6 +5,8 @@ services:
     restart: always
     ports:
       - "7860:7860"
+    networks:
+      - ai_net
     deploy:
       resources:
         reservations:
@@ -14,7 +16,7 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - ./models:/stable-diffusion-webui/models/Stable-diffusion
+      - /home/ol-randals/M2/docker_data/automatic1111/models:/stable-diffusion-webui/models/Stable-diffusion
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
@@ -22,3 +24,5 @@ services:
       - /dev/nvidiactl
       - /dev/nvidia0
     command: -f --api --listen
+networks:
+  ai_net:

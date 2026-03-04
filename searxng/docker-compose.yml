@@ -7,9 +7,9 @@ services:
     volumes:
       - ${SEARXNG_CONFIG}:/etc/searxng
       - ${SEARXNG_DATA}:/var/cache/searxng
-    networks:
-      - searxng_network
+    networks: 
+      - selfhost_network
 
 networks:
-  searxng_network:
+  selfhost_network:
     driver: bridge

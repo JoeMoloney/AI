@@ -9,8 +9,8 @@ services:
     ports: [ "3000:8080" ]
     volumes:
       - ${OPENWEBUI_DATA}:/app/backend/data
-    networks:
-      - ai_network
+    networks: 
+      - selfhost_network
 
   ollama:
     image: ollama/ollama:latest
@@ -34,9 +34,9 @@ services:
       - /dev/nvidia-modeset
       - /dev/nvidiactl
       - /dev/nvidia0
-    networks:
-      - ai_network
+    networks: 
+      - selfhost_network
 
 networks:
-  ai_network:
+  selfhost_network:
     driver: bridge

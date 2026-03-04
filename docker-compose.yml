@@ -1,0 +1,22 @@
+services:
+  open-webui:
+    extends:
+      file: ./open-webui/docker-compose.yml
+      service: open-webui
+    networks: 
+      - selfhost_network
+  ollama:
+    extends:
+      file: ./open-webui/docker-compose.yml
+      service: ollama
+    networks: 
+      - selfhost_network
+  searxng:
+    extends:
+      file: ./searxng/docker-compose.yml
+      service: searxng
+    networks: 
+      - selfhost_network
+networks:
+  selfhost_network:
+    driver: bridge
