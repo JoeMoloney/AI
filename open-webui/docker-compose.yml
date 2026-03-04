@@ -1,10 +1,22 @@
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:ollama
+    image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
     restart: always
     environment:
       - WEBUI_AUTH=False
+      - OLLAMA_BASE_URL=http://localhost:11434
+    ports:
+      - "3000:8080"
+    volumes:
+      - ${OPENWEBUI_DATA}:/app/backend/data
+    network_mode: "host"
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: always
+    environment:
+      - OLLAMA_VULKAN=1
     deploy:
       resources:
         reservations:
@@ -14,8 +26,7 @@ services:
               capabilities: [gpu]
     runtime: nvidia
     volumes:
-      - ${OPENWEBUI_OLLAMA_DATA}:/root/.ollama
-      - ${OPENWEBUI_OLLAMA_BACKEND_DATA}:/app/backend/data
+      - ${OLLAMA_DATA}:/root/.ollama
     devices:
       - /dev/nvidia-uvm
       - /dev/nvidia-uvm-tools
