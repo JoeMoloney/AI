@@ -17,6 +17,7 @@ services:
       service: searxng
     networks: 
       - selfhost_network
+
 networks:
   selfhost_network:
     driver: bridge

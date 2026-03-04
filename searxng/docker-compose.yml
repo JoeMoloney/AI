@@ -1,12 +1,23 @@
+#See: https://docs.openwebui.com/features/chat-conversations/web-search/providers/searxng/
+#For finishing open-webui/searxng configuration steps by adding JSON format support
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
     container_name: searxng
     restart: unless-stopped
-    ports: [ "8888:8080" ]
+    ports: [ "8080:8080" ]
     volumes:
       - ${SEARXNG_CONFIG}:/etc/searxng
       - ${SEARXNG_DATA}:/var/cache/searxng
+    env_file:
+      - .env
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
     networks: 
       - selfhost_network
 
