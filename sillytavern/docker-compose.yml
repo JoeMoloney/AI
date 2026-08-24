@@ -1,0 +1,80 @@
+services:
+  sillytavern:
+    build: ..
+    container_name: sillytavern
+    restart: unless-stopped
+    hostname: sillytavern
+    image: ghcr.io/sillytavern/sillytavern:latest
+    environment:
+      - NODE_ENV=production
+      - FORCE_COLOR=1
+      - SILLYTAVERN_HEARTBEATINTERVAL=30
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${SILLYTAVERN_DATA}/config:/home/node/app/config
+      - ${SILLYTAVERN_DATA}/data:/home/node/app/data
+      - ${SILLYTAVERN_DATA}/plugins:/home/node/app/plugins
+      - ${SILLYTAVERN_DATA}/extensions:/home/node/app/public/scripts/extensions/third-party
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    networks: 
+      - selfhost_network
+    depends_on:
+      - ollama
+      - comfyui
+    
+  
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia
+    ports: [ "11434:11434" ]
+    volumes:
+      - ${OLLAMA_DATA}:/root/.ollama
+    devices:
+      - /dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools
+      - /dev/nvidia-modeset
+      - /dev/nvidiactl
+      - /dev/nvidia0
+    networks: 
+      - selfhost_network
+
+  comfyui:
+    image: yanwk/comfyui-boot:cu130-slim-v2
+    container_name: perchance-comfyui
+    restart: unless-stopped
+    ports:
+      - "8188:8188"
+    volumes:
+      - ${SILLYTAVERN_DATA}/comfyui:/root/ComfyUI
+    environment:
+      CLI_ARGS: "--listen 0.0.0.0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    runtime: nvidia
+    networks:
+      - selfhost_network
+
+networks:
+  selfhost_network:
+    external: true
