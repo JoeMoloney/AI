@@ -5,4 +5,4 @@ source ./comfyui/.env
 source ./sillytavern/.env
 set +a
 docker compose pull
-docker compose up
+docker compose up --force-recreate
