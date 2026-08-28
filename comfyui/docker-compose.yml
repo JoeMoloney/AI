@@ -8,7 +8,7 @@ services:
     volumes:
       - ${COMFYUI_DATA}:/root/ComfyUI
     environment:
-      CLI_ARGS: "--listen 0.0.0.0"
+      CLI_ARGS: "--listen 0.0.0.0 --disable-smart-memory --log-stdout"
     deploy:
       resources:
         reservations:
