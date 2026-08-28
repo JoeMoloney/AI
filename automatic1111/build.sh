@@ -1,1 +1,1 @@
-docker build -D --progress=plain -t automatic1111 -f Dockerfile .
+docker build -D --progress=plain -t automatic1111 -f Dockerfile . --no-cache
