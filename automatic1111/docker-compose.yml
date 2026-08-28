@@ -5,8 +5,8 @@ services:
     restart: always
     ports:
       - "7860:7860"
-    networks:
-      - ai_net
+    networks: 
+      - selfhost_network
     deploy:
       resources:
         reservations:
@@ -25,4 +25,5 @@ services:
       - /dev/nvidia0
     command: -f --api --listen
 networks:
-  ai_net:
+  selfhost_network:
+    driver: bridge
