@@ -27,7 +27,7 @@ services:
 
   comfyui:
     extends:
-      file: ./sillytavern/docker-compose.yml
+      file: ./comfyui/docker-compose.yml
       service: comfyui
     networks: 
       - selfhost_network

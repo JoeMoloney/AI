@@ -1,0 +1,26 @@
+services:
+  comfyui:
+    image: yanwk/comfyui-boot:cu130-slim-v2
+    container_name: comfyui
+    restart: unless-stopped
+    ports:
+      - "8188:8188"
+    volumes:
+      - ${COMFYUI_DATA}:/root/ComfyUI
+    environment:
+      CLI_ARGS: "--listen 0.0.0.0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    runtime: nvidia
+    networks:
+      - selfhost_network
+
+networks:
+  selfhost_network:
+    external: true
