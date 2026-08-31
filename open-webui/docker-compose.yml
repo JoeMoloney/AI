@@ -16,6 +16,7 @@ services:
     volumes:
       - ${OPENWEBUI_DATA}:/app/backend/data
       - ${COMFYUI_WORKFLOWS}:/comfyui_workflows
+      - ${OPENWEBUI_CUSTOMTOOLS}:/custom_tools
     networks: 
       - selfhost_network
 
