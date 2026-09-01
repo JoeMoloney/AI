@@ -1,24 +1,41 @@
 #!/bin/bash
-# Tool copy script for Open-WebUI custom tools
+set -e
 
-# Read destination from .env file relative to current directory
+# ------------------------------------------------------------
+# Deploy ComfyUI Image Tool to Open WebUI
+# ------------------------------------------------------------
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/../.env"
 
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: .env file not found at $ENV_FILE"
+    echo "Error: .env not found: $ENV_FILE"
     exit 1
 fi
 
-# Read destination from .env file
-DEST_DIR=$(grep "^OPENWEBUI_CUSTOMTOOLS=" "$ENV_FILE" | cut -d'=' -f2-)
+source "$ENV_FILE"
 
-# Replace ~ with home directory path if needed  
-if [[ "$DEST_DIR" == "~/"* ]]; then
-    DEST_DIR="${HOME}/${DEST_DIR:2}"
+if [ -z "$OPENWEBUI_CUSTOMTOOLS" ]; then
+    echo "Error: OPENWEBUI_CUSTOMTOOLS is not set in $ENV_FILE"
+    exit 1
 fi
 
-# Copy the entire comfyui_image folder (excluding __pycache__ and README.md)
-cp -r "$SCRIPT_DIR/comfyui_image/"* "$DEST_DIR/comfyui_image/"
+SOURCE_DIR="$SCRIPT_DIR/comfyui_image"
+DEST_DIR="$OPENWEBUI_CUSTOMTOOLS/comfyui_image"
 
-echo "Tool files copied successfully to $DEST_DIR/comfyui_image/"
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo "Error: source directory not found: $SOURCE_DIR"
+    exit 1
+fi
+
+mkdir -p "$DEST_DIR"
+
+rsync -av \
+    --exclude='__pycache__/' \
+    --exclude='*.pyc' \
+    "$SOURCE_DIR/" "$DEST_DIR/"
+
+echo
+echo "✓ ComfyUI Image Tool deployed"
+echo "  Source:      $SOURCE_DIR"
+echo "  Destination: $DEST_DIR"
