@@ -1,4 +1,4 @@
 automatic1111/models
 automatic1111/.cache/
 open-webui/tools/comfyui_image/__pycache__
-/open-webui/.apiKey
+open-webui/.apiKey
