@@ -74,3 +74,5 @@ Multiple smaller AI models that will communicate together and research the users
 - Automatic1111 Stable Diffusion Service: https://github.com/AUTOMATIC1111/stable-diffusion-webui
 - SearXNG Service: https://docs.searxng.org/admin/installation-searxng.html
 - PewDiePie: https://github.com/pewdiepie-archdaemon
+- OpenCode: https://opencode.ai/docs/
+- - A codex-like CLI interface for conversing and working alongside an LLM. Works nicely with the local ollama docker container.
