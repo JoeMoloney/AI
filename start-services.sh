@@ -1,5 +1,6 @@
 set -a
 source ./open-webui/.env
+source ./open-webui/.apiKey
 source ./searxng/.env
 source ./comfyui/.env
 source ./sillytavern/.env

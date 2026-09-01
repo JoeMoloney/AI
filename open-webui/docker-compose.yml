@@ -12,6 +12,8 @@ services:
       RAG_WEB_SEARCH_RESULT_COUNT: 3
       RAG_WEB_SEARCH_CONCURRENT_REQUESTS: 10
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      COMFYUI_IMAGE_TOOL_DIR: /custom_tools/comfyui_image
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY} #Create a .apiKey file alongside .env - Generate the key via Open-WebUI > Settings > Account
     ports: [ "3000:8080" ]
     volumes:
       - ${OPENWEBUI_DATA}:/app/backend/data
