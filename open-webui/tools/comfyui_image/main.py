@@ -8,7 +8,22 @@ from typing import Optional
 # TOOL DIRECTORY
 # ============================================================
 
-TOOL_DIR = "/custom_tools/comfyui_image"
+# Use the directory where main.py is located instead of hardcoded paths
+# This makes it work correctly whether run directly or via copy-paste in Open WebUI
+TOOL_DIR = os.getenv(
+    "COMFYUI_IMAGE_TOOL_DIR",
+    os.path.dirname(os.path.abspath(__file__)),
+)
+
+# Debug: Print current working directory and paths for troubleshooting
+print(f"[COMFYUI_IMAGE] TOOL_DIR set to: {TOOL_DIR}", flush=True)
+print(f"[COMFYUI_IMAGE] Current working directory: {os.getcwd()}", flush=True)
+print(f"[COMFYUI_IMAGE] Python path: {sys.path}", flush=True)
+
+# Ensure the tool directory is in Python's path for dynamic imports
+if TOOL_DIR not in sys.path:
+    sys.path.insert(0, TOOL_DIR)
+    print(f"[COMFYUI_IMAGE] Added TOOL_DIR to sys.path: {TOOL_DIR}", flush=True)
 
 
 if not os.path.isdir(TOOL_DIR):

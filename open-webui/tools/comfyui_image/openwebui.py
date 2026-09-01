@@ -821,6 +821,20 @@ class OpenWebUIManager:
                 tags,
             )
         )
+        if (
+            not isinstance(
+                upload_result,
+                tuple,
+            )
+            or len(upload_result) != 2
+        ):
+            raise RuntimeError(
+                "Open WebUI Storage.upload_file "
+                "returned an unexpected result."
+            )
+
+        contents, file_path = upload_result
+
         print(
             "[COMFYUI_IMAGE] Storage.upload_file() COMPLETE "
             f"path={file_path!r}",
