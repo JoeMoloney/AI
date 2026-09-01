@@ -1,22 +1,57 @@
-# The init()
+# AI Services Repository
+
 I decided I wanted to experiment with AI considering it's everywhere including electric toothbrushes (for some reason): https://www.oralb.co.uk/en-gb/product-collections/genius-x)
 
-So here's a repo with configurations to run AI based services through the Docker Container Engine.
-I wanted to make this process as smooth as possible should I distro hop and if anyone wants to try out AI related stuff whilst retaining as much *privacy and control over their data* by using their own hardware.
+This repository contains configurations to run various AI-based services through Docker Container Engine. The goal is to make setting up these services as smooth as possible, especially if you want to distro-hop, and to retain privacy and control over your data by using your own hardware.
 
-I will update this with different services as I experiment and learn.
+## Overview
 
-**_Check through the subfolders for each individual service_**
+This setup allows you to run multiple AI services locally on your hardware, giving you complete control over data privacy and processing. All services are containerized for easy deployment and management.
+
+**Check through the subfolders for each individual service**
 
 ## Current Services
-- Open-WebUI
-- Ollama
-- SearXNG
-- Automatic1111 StableDiffusion
 
-## WIP
-- Hook up Automatic1111 to Open-WebUI 
-- Claude Code / Codex for access from a terminal
+### Open-WebUI
+A chat interface for interacting with large language models. Accessible through a web UI.
+
+### Ollama  
+An application for running LLMs locally on your machine.
+
+### SearXNG
+A privacy-respecting metasearch engine that searches the web without tracking users.
+
+### ComfyUI
+A web UI for generating images from text.
+
+### Automatic1111
+A web UI for generating images from text.
+
+### SillyTavern
+A web UI for interacting with LLMs for generating images, personas, characters, stories etc.
+
+## Getting Started
+
+### Prerequisites
+- Docker and Docker Compose installed
+- At least 16GB RAM recommended for running AI services
+
+### Setup
+1. Clone this repository
+
+2. Configure environment variables (if needed) via the .env files
+
+3. Start all services using .start-services.sh
+
+4. Access the services:
+   - Open-WebUI: http://localhost:3000
+   - SearXNG: http://localhost:8080
+   - ComfyUI: http://localhost:8188  
+   - Automatic1111 Stable Diffusion: http://localhost:7860
+
+## WIP (Work In Progress)
+- Refine ComfyUI integration with Open-WebUI
+- Hook up Automatic1111 to Open-WebUI
 
 ## Hopes & Dreams
 Multiple smaller AI models that will communicate together and research the users prompt using SearXNG private web access. They shall be known as:
@@ -24,11 +59,11 @@ Multiple smaller AI models that will communicate together and research the users
 
 ## My Hardware & OS Specs:
 
-+ **OS:** Linux Mint 22.3 x86_64
-+ **Kernel:** 6.17.0-14-generic
-+ **Packages:** 2296 (dpkg), 22 (flatpak)
-+ **Shell:** bash 5.2.21
-+ **DE:** Cinnamon 6.6.7
++ **OS:** CachyOS Arch Linux
++ **Kernel:** 7.2.2-1-cachyos
++ **Packages:** 1842 (pacman)
++ **Shell:** zsh 5.9.2
++ **DE:** KDE Plasma 6.7.4 (Wayland)
 + **CPU:** Intel i9-10900K (20) @ 5.3GHz
 + **GPU 0:** NVIDIA GeForce RTX 3090 (24GB)
 + **GPU 1:** Intel CometLake-S GT2 (UHD Graphics 630)
