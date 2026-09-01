@@ -1,7 +1,3 @@
-automatic1111/models/
+automatic1111/models
 automatic1111/.cache/
-open-webui/data/*
-searxng/valkey-data
-searxng/caddy-config
-searxng/caddy-data
 open-webui/tools/comfyui_image/__pycache__
