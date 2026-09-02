@@ -1,3 +1,4 @@
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=900&size=42&pause=1000&color=7500F7&width=500&height=70&lines=Support+Real+Artists)](https://git.io/typing-svg)
 # AI Services Repository
 
 I decided I wanted to experiment with AI considering it's everywhere including electric toothbrushes (for some reason): https://www.oralb.co.uk/en-gb/product-collections/genius-x)
@@ -6,7 +7,7 @@ This repository contains configurations to run various AI-based services through
 
 ## Overview
 
-This setup allows you to run multiple AI services locally on your hardware, giving you complete control over data privacy and processing. All services are containerized for easy deployment and management.
+This setup allows you to run multiple AI services locally on your hardware, giving you complete control over data and processing. All services are containerized for easy deployment and management.
 
 **Check through the subfolders for each individual service**
 

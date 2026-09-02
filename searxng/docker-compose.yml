@@ -1,5 +1,3 @@
-#See: https://docs.openwebui.com/features/chat-conversations/web-search/providers/searxng/
-#For finishing open-webui/searxng configuration steps by adding JSON format support
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
