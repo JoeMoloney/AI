@@ -57,4 +57,12 @@ MODEL_WORKFLOWS = {
 "generate": "image_netayume_lumina_t2i_unc_V2.json",
 "edit": None,
 },
+"Gemma_4_26B_Chroma": {
+"name": "Gemma_4_26B_Chroma",
+"generate": "image_chroma_text_to_image.json"
+},
+"Gemma_4_26B_Chroma_Radiance": {
+"name": "Gemma_4_26B_Chroma_Radiance",
+"generate": "image_chroma1_radiance_text_to_image.json"
+},
 }
