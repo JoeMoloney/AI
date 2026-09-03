@@ -363,6 +363,7 @@ class Tools:
     async def generate_image(
         self,
         prompt: str,
+        negative_prompt: Optional[str] = None,
         width: int = 1024,
         height: int = 1024,
         steps: Optional[int] = None,
@@ -615,6 +616,7 @@ class Tools:
                 edit_previous=edit_previous,
                 image_base64=image_base64,
                 denoise=effective_denoise,
+                negative_prompt=negative_prompt,
             )
 
         except Exception as e:

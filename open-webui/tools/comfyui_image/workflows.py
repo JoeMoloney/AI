@@ -306,6 +306,7 @@ class WorkflowManager:
         edit_previous=False,
         image_base64=None,
         denoise=None,
+        negative_prompt=None,
     ):
         print(
             "[COMFYUI_IMAGE] WorkflowManager.prepare() START "
@@ -326,9 +327,9 @@ class WorkflowManager:
             flush=True,
         )
         # --------------------------------------------------------
-        # Replace %prompt%
+        # Replace %prompt% and %positive_prompt%/%negative_prompt%
         # --------------------------------------------------------
-
+        
         for node in workflow.values():
 
             if not isinstance(node, dict):
@@ -343,6 +344,10 @@ class WorkflowManager:
 
                 if value == "%prompt%":
                     inputs[key] = prompt
+                elif value == "%positive_prompt%":
+                    inputs[key] = prompt
+                elif value == "%negative_prompt%":
+                    inputs[key] = negative_prompt or ""
 
         # --------------------------------------------------------
         # Select nodes
