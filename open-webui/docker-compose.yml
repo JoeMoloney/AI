@@ -9,8 +9,8 @@ services:
       ENABLE_RAG_WEB_SEARCH: True
       ENABLE_RAG_LOCAL_WEB_FETCH: True
       RAG_WEB_SEARCH_ENGINE: "searxng"
-      RAG_WEB_SEARCH_RESULT_COUNT: 3
-      RAG_WEB_SEARCH_CONCURRENT_REQUESTS: 10
+      RAG_WEB_SEARCH_RESULT_COUNT: 8
+      RAG_WEB_SEARCH_CONCURRENT_REQUESTS: 5
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
       COMFYUI_IMAGE_TOOL_DIR: /custom_tools/comfyui_image
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY} #Create a .apiKey file alongside .env - Generate the key via Open-WebUI > Settings > Account
