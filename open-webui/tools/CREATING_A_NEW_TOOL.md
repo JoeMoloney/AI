@@ -1,27 +1,91 @@
-Open WebUI Custom Tool: Creation & Registration Guide
+# Open WebUI Custom Tools — Creation & Deployment Runbook
 
-This guide documents the workflow for creating a new local Open WebUI custom tool, registering it with Open WebUI, and deploying its source files into the mounted custom-tools directory.
+This runbook documents the local workflow for creating, registering, deploying, and testing Open WebUI Workspace Tools while keeping the source code in a version-controlled repository.
 
-Important: Open WebUI tool registration and the tool's supporting source files are two separate things. Registration tells Open WebUI that a tool exists and stores its main.py content. The mounted directory provides the supporting Python modules/files that main.py imports at runtime.
+The important concept is that Open WebUI tool registration and the tool's supporting files are separate things.
 
-1. Create the tool in the repository
+- Open WebUI registration stores the actual `main.py` source and tells Open WebUI that the tool exists.
+- The mounted `/custom_tools` directory provides supporting Python modules and other files that `main.py` imports or uses at runtime.
 
-A useful repository layout is:
+This runbook is designed to remain useful even without internet access.
 
-tools/
-└── my_new_tool/
-    ├── main.py
-    ├── config.py
-    ├── helpers.py
-    └── ...
 
-The important file is:
+## 1. Architecture
 
-main.py
+The recommended layout is:
 
-It should contain an Open WebUI-compatible Tools class.
+Git repository
+└── tools/
+    └── my_new_tool/
+        ├── main.py
+        ├── config.py
+        ├── helpers.py
+        └── ...
+
+The deployed copy is placed in the host directory configured by:
+
+volumes:
+  - ${OPENWEBUI_CUSTOMTOOLS}:/custom_tools
 
 For example:
+
+Host:
+~/M2/docker_data/open-webui/custom_tools/my_new_tool/
+
+Container:
+/custom_tools/my_new_tool/
+
+Open WebUI's database contains the registered tool:
+
+Tool ID:
+my_new_tool
+
+Name:
+My New Tool
+
+Content:
+<actual contents of main.py>
+
+The relationship is:
+
+                 Git repository
+                      |
+          +-----------+-----------+
+          |                       |
+       main.py              supporting files
+          |                       |
+          v                       v
+ Open WebUI database       /custom_tools/my_new_tool/
+          |                       |
+          +-----------+-----------+
+                      |
+                      v
+              Open WebUI loads
+              registered main.py
+                      |
+                      v
+          main.py imports/uses
+          supporting files
+
+IMPORTANT:
+
+Copying a folder into `/custom_tools` does NOT automatically register a new Workspace Tool.
+
+The tool must first exist in Open WebUI's tool registry/database.
+
+
+## 2. Create the Tool in the Repository
+
+Create a directory:
+
+tools/my_new_tool/
+
+At minimum:
+
+tools/my_new_tool/
+└── main.py
+
+A simple `main.py`:
 
 """
 title: My New Tool
@@ -30,69 +94,77 @@ version: 1.0.0
 """
 
 class Tools:
+
     def __init__(self):
         print("[MY_NEW_TOOL] Tools initialized", flush=True)
 
     def hello(self, name: str = "world") -> str:
         return f"Hello, {name}!"
 
-Open WebUI discovers callable methods on the Tools class and exposes them as tool functions.
+Open WebUI uses the `Tools` class and its callable methods as the tool's functions.
 
-2. Keep the tool directory self-contained
 
-If main.py imports local files, keep those files inside the tool's directory.
+## 3. Keep Supporting Files With the Tool
 
-For example:
+For a multi-file tool:
 
-my_new_tool/
+tools/my_new_tool/
 ├── main.py
 ├── config.py
 ├── helpers.py
 └── workflows/
     └── example.json
 
+`main.py` can import the supporting modules.
+
+For example:
+
+from helpers import do_something
+from config import SOME_SETTING
+
+Keep the tool self-contained where practical.
+
 Avoid relying on arbitrary files elsewhere on the host filesystem unless there is a deliberate reason to do so.
 
-For the ComfyUI Image Tools project, this is why the tool has its own directory:
 
-/custom_tools/comfyui_image/
+## 4. Choose a Stable Tool ID
 
-and supporting modules such as:
-
-comfyui.py
-config.py
-diagnostics.py
-openwebui.py
-routing.py
-workflows.py
-3. Decide the tool ID and display name
-
-Choose a stable ID.
+Choose a unique, stable ID.
 
 Example:
 
 ID: comfyui_image_tools
 Name: ComfyUI Image Tools
 
-The ID is the important identifier used by Open WebUI's API.
-
-The display name is what you normally see in the UI.
-
-A good convention is:
+Recommended ID style:
 
 lowercase_with_underscores
 
-for the ID.
+Treat the ID as permanent. Avoid casually changing it after registration.
 
-Do not casually change the ID after registration. Treat it as the tool's stable identifier.
 
-4. Register the tool with Open WebUI
+## 5. Register the Tool With Open WebUI
 
-Registration is separate from copying the supporting files.
+This is a required step for this deployment method.
 
-The registration request creates the Open WebUI database entry.
+DO NOT register a filesystem path to `main.py`.
 
-Conceptually, the request looks like:
+The registration contains the actual contents of `main.py`.
+
+Conceptually:
+
+ID:
+my_new_tool
+
+Name:
+My New Tool
+
+Content:
+<contents of tools/my_new_tool/main.py>
+
+The registration creates the Open WebUI database entry.
+
+Example API request:
 
 curl -X POST "http://localhost:3000/api/tools/create" \
   -H "Authorization: Bearer $OPENWEBUI_API_KEY" \
@@ -107,36 +179,200 @@ curl -X POST "http://localhost:3000/api/tools/create" \
     },
     "access_grants": []
   }'
-Important
 
-The content field is the actual contents of main.py.
+IMPORTANT:
 
-Do not put the path:
+The `content` field is the actual Python source of `main.py`.
+[To update, paste the contents of main.py into the tools web IDE interface]
+
+## 6. Deploy the Tool Files
+
+After registering the tool, copy the repository directory to the mounted custom-tools directory.
+
+Given:
+
+volumes:
+  - ${OPENWEBUI_CUSTOMTOOLS}:/custom_tools
+
+and:
+
+OPENWEBUI_CUSTOMTOOLS=~/M2/docker_data/open-webui/custom_tools
+
+the mapping is:
+
+Host:
+~/M2/docker_data/open-webui/custom_tools/
+
+        |
+        | Docker bind mount
+        v
+
+Container:
+/custom_tools/
+
+Therefore:
+
+Repository:
+tools/my_new_tool/
+
+        |
+        | deploy/copy
+        v
+
+Host:
+~/M2/docker_data/open-webui/custom_tools/my_new_tool/
+
+        |
+        | Docker mount
+        v
+
+Container:
+/custom_tools/my_new_tool/
+
+
+## 7. Why Both Registration and Filesystem Deployment Are Needed
+
+For a multi-file tool there are two separate pieces.
+
+### Open WebUI registration
+
+Open WebUI knows:
+
+ID: my_new_tool
+Name: My New Tool
+main.py: registered Python source
+
+This is what makes the tool known to Open WebUI.
+
+### Mounted filesystem
+
+The container has:
+
+/custom_tools/my_new_tool/
+├── config.py
+├── helpers.py
+├── workflows/
+└── ...
+
+These files are available to the registered `main.py` at runtime.
+
+### Critical distinction
+
+Open WebUI does NOT automatically find and register:
 
 /custom_tools/my_new_tool/main.py
 
-in content.
+just because the file exists.
 
-Open WebUI stores the registered tool's main source code separately.
+The normal sequence is:
 
-5. Verify that registration succeeded
+1. Register main.py with Open WebUI.
+2. Deploy supporting files to /custom_tools/.
+3. Restart Open WebUI.
+4. Test the tool.
 
-Query the tools API:
+For a simple one-file tool, the registered `main.py` may be sufficient.
+
+For a multi-file tool, the supporting files must also be available inside the container.
+
+
+## 8. Keep Repository main.py and Registered main.py Synchronized
+
+There are effectively two copies of `main.py`:
+
+Git repository:
+tools/my_new_tool/main.py
+
+Open WebUI database:
+registered main.py
+
+Treat the Git repository as the source of truth.
+
+If `main.py` changes:
+
+1. Edit the repository version.
+2. Update/re-register the Open WebUI tool so its registered content matches.
+2.1 This can be done simply by updating the code in the open-webui frontend IDE interface with the new main.py source code
+3. Deploy the supporting files.
+4. Restart Open WebUI.
+5. Test the tool.
+
+Avoid accidentally testing an old registered copy while believing you are testing the new Git version.
+
+
+## 9. Deploy Supporting Files
+
+Use a deployment method that excludes Python cache files.
+
+Recommended:
+
+rsync -av \
+  --exclude '__pycache__/' \
+  --exclude '*.pyc' \
+  tools/my_new_tool/ \
+  "$OPENWEBUI_CUSTOMTOOLS/my_new_tool/"
+
+Do not deploy:
+
+__pycache__/
+*.pyc
+
+These are generated Python cache files and should not normally be version-controlled or deployed.
+
+
+## 10. Restart Open WebUI
+
+After changing Python source files, restart Open WebUI.
+
+For example:
+
+docker restart open-webui
+
+or:
+
+docker compose up -d --force-recreate open-webui
+
+Restarting is the safest development workflow because Python modules may already have been imported and cached by the running Open WebUI process.
+
+Do not assume that changing a `.py` file on the mounted filesystem automatically reloads an already-running module.
+
+
+## 11. Verify the Files Inside the Container
+
+Check that the deployed files exist:
+
+docker exec open-webui sh -c \
+  'ls -la /custom_tools/my_new_tool'
+
+For example:
+
+main.py
+config.py
+helpers.py
+workflows/
+
+Inspect `main.py` if necessary:
+
+docker exec open-webui sh -c \
+  'sed -n "1,200p" /custom_tools/my_new_tool/main.py'
+
+Remember that this filesystem copy is primarily useful for supporting files. The Open WebUI tool loader executes the registered `main.py` source.
+
+
+## 12. Verify Tool Registration
+
+List registered tools:
 
 curl -s \
   -H "Authorization: Bearer $OPENWEBUI_API_KEY" \
   "http://localhost:3000/api/v1/tools/" \
   | python -m json.tool
 
-You should see an entry resembling:
+Look for:
 
-{
-    "id": "my_new_tool",
-    "name": "My New Tool",
-    ...
-}
+my_new_tool
 
-You can also query the specific tool:
+You can also query the individual tool:
 
 curl -s \
   -H "Authorization: Bearer $OPENWEBUI_API_KEY" \
@@ -145,124 +381,28 @@ curl -s \
 
 Check that:
 
-the ID is correct
-the name is correct
-the tool exists
-the expected functions appear under specs
+- The ID is correct.
+- The name is correct.
+- The tool exists.
+- The expected functions appear in the tool specification.
 
 For example:
 
 "specs": [
     {
-        "name": "hello",
-        ...
+        "name": "hello"
     }
 ]
-6. Copy the supporting files into the mounted directory
 
-Your Docker Compose configuration mounts:
 
-volumes:
-  - ${OPENWEBUI_CUSTOMTOOLS}:/custom_tools
-
-If your environment contains:
-
-OPENWEBUI_CUSTOMTOOLS=~/M2/docker_data/open-webui/custom_tools
-
-then, from the container's point of view, the host directory:
-
-~/M2/docker_data/open-webui/custom_tools
-
-appears as:
-
-/custom_tools
-
-inside Open WebUI.
-
-Therefore a repository tool:
-
-tools/my_new_tool/
-
-should be copied to the host directory:
-
-~/M2/docker_data/open-webui/custom_tools/my_new_tool/
-
-which Open WebUI sees as:
-
-/custom_tools/my_new_tool/
-7. The relationship between registration and the mounted files
-
-This is the part that is easiest to confuse.
-
-There are two separate pieces.
-
-Open WebUI registration
-
-Open WebUI knows:
-
-ID: my_new_tool
-Name: My New Tool
-main.py: registered source code
-
-This is what makes the tool appear in the Open WebUI tools list and allows it to be attached to a model.
-
-Mounted filesystem
-
-The container has:
-
-/custom_tools/my_new_tool/
-├── main.py
-├── config.py
-├── helpers.py
-└── ...
-
-This is where the runtime can load supporting modules and files.
-
-For a simple one-file tool, the registered main.py may be all that is required.
-
-For a multi-file tool, the supporting files must also be available in the mounted directory.
-
-8. Restart Open WebUI after changing tool source files
-
-For this setup, the safe development workflow is:
-
-Edit the source files in the repository.
-Copy them into the mounted custom-tools directory.
-Restart/recreate the Open WebUI container.
-Test the tool.
-
-For example:
-
-docker compose up -d --force-recreate open-webui
-
-or:
-
-docker restart open-webui
-
-A restart is the safest assumption when developing custom tools because Python modules may already have been imported into the running Open WebUI process.
-
-Do not assume that changing a .py file on the mounted filesystem automatically reloads an already-running Python module.
-
-9. Verify the files from inside the container
-
-After copying the files, check:
-
-docker exec open-webui sh -c \
-  'ls -la /custom_tools/my_new_tool'
-
-For a multi-file tool, confirm all expected files are present.
-
-You can inspect main.py with:
-
-docker exec open-webui sh -c \
-  'sed -n "1,200p" /custom_tools/my_new_tool/main.py'
-10. Test loading the tool directly
+## 13. Test Loading the Tool
 
 A useful diagnostic is to ask Open WebUI's own Python environment to load the registered tool:
 
 docker exec open-webui sh -c \
   'python - <<'"'"'PY'"'"'
 import asyncio
+
 from open_webui.utils.plugin import load_tool_module_by_id
 
 async def main():
@@ -281,247 +421,195 @@ LOAD OK
 Tool class: <class 'tool_my_new_tool.Tools'>
 Frontmatter: {}
 
-Any diagnostic print() statements in your modules may also appear before LOAD OK.
+Diagnostic `print()` statements from the tool may appear before `LOAD OK`.
 
-This is an excellent test because it confirms that Open WebUI can actually import the registered tool.
+This test is useful because it confirms that Open WebUI can actually load the registered tool and its imports.
 
-11. Test the tool through Open WebUI
 
-Once the direct loading test works:
+## 14. Test Through Open WebUI
 
-Open Open WebUI.
-Confirm the tool appears in the tools list.
-Attach it to the intended model.
-Ask the model to use the tool.
-Check the Open WebUI container logs if something fails.
+Once direct loading works:
 
-For example:
+1. Open Open WebUI.
+2. Confirm the tool appears in the Tools list.
+3. Attach it to the intended model.
+4. Ask the model to use the tool.
+5. Check the logs if something fails.
+
+Useful command:
 
 docker logs --since 5m open-webui
 
-For a tool with explicit diagnostic logging, messages such as:
+Diagnostic messages such as:
 
 [MY_NEW_TOOL] Tools initialized
 
-are useful confirmation that the tool was instantiated.
+can confirm that the tool was instantiated.
 
-Development Workflow
 
-Once everything is set up, the normal development cycle can be very simple.
+## 15. Dependencies
 
-┌─────────────────────────┐
-│ Edit tool in VS Code    │
-│ repository              │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│ Run copy/deploy script  │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│ Files copied to         │
-│ $OPENWEBUI_CUSTOMTOOLS  │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│ Restart Open WebUI      │
-│ container               │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│ Test tool loading       │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│ Test from Open WebUI    │
-└─────────────────────────┘
-Creating a Completely New Tool
+The Open WebUI container has its own Python environment.
 
-For a brand-new tool, the complete process is:
-
-Step 1 — Create the repository folder
-tools/my_new_tool/
-Step 2 — Create main.py
-
-Make sure it contains:
-
-class Tools:
-    ...
-
-and valid Open WebUI tool methods.
-
-Step 3 — Add supporting Python files
+A package installed on the host is NOT automatically available inside the container.
 
 For example:
 
-tools/my_new_tool/
-├── main.py
-├── config.py
-└── helpers.py
-Step 4 — Copy the folder to the custom-tools directory
+import requests
 
-Host:
+requires `requests` to exist in the Open WebUI container's Python environment.
 
-~/M2/docker_data/open-webui/custom_tools/my_new_tool/
+For every third-party dependency:
 
-Container:
+- Document it in the repository.
+- Make sure it is installed in the Open WebUI environment.
+- Do not assume host Python packages are available inside Docker.
 
-/custom_tools/my_new_tool/
-Step 5 — Register the tool with Open WebUI
+Prefer the Python standard library where practical.
 
-Use the tools API and provide:
 
-id
-name
-main.py content
-meta
-access_grants
-Step 6 — Verify registration
-curl -s \
-  -H "Authorization: Bearer $OPENWEBUI_API_KEY" \
-  "http://localhost:3000/api/v1/tools/" \
-  | python -m json.tool
-Step 7 — Restart Open WebUI
-docker restart open-webui
-Step 8 — Test direct loading
+## 16. Environment Variables and Secrets
 
-Use:
+Python code runs inside the Open WebUI container.
 
-load_tool_module_by_id("my_new_tool")
-Step 9 — Test from the UI
+Use container-visible environment variables:
 
-Attach the tool to a model and call one of its functions.
+import os
 
-Updating an Existing Tool
+comfyui_url = os.environ["COMFYUI_URL"]
 
-For normal code changes, you generally do not need to create a second tool.
+Docker Compose might provide:
+
+environment:
+  COMFYUI_URL: ${COMFYUI_URL}
+
+Use container paths in Python.
+
+For example:
+
+/custom_tools/comfyui_image
+
+NOT:
+
+~/M2/docker_data/open-webui/custom_tools/comfyui_image
+
+The latter is a host path and is not normally visible from inside the container.
+
+### Never put secrets directly into main.py
+
+Avoid:
+
+API_KEY = "actual-secret"
+
+Prefer environment variables or another appropriate secret mechanism.
+
+
+## 17. Security
+
+Open WebUI Workspace Tools execute Python inside the Open WebUI server environment.
+
+Treat tool code as trusted code.
+
+A tool may potentially access:
+
+- The filesystem
+- Environment variables
+- Network resources
+- Installed Python packages
+- The Open WebUI Python environment
+
+Do not install or register untrusted tool code.
+
+For a local single-user installation this may be acceptable, but it becomes particularly important if Open WebUI is accessible to other users.
+
+
+## 18. Updating an Existing Tool
 
 If the tool already exists:
 
 ID: my_new_tool
 
-then:
+do not create another tool just because the code changed.
 
-Edit the source in the repository.
-Copy the updated files into /custom_tools/my_new_tool/.
-Restart Open WebUI.
-Test the tool.
+### Supporting-file-only change
 
-However, there is an important distinction.
-
-If you change only supporting files
-
-For example:
+If you change:
 
 config.py
 helpers.py
 workflows.py
 
-you only need to deploy those updated files and restart Open WebUI.
+then:
 
-If you change main.py
+1. Deploy the changed files.
+2. Restart Open WebUI.
+3. Test the tool.
 
-Remember that Open WebUI also has a registered copy of main.py.
+### main.py change
 
-Therefore, depending on how the tool is being loaded and managed, you should keep the registered tool content and your repository copy synchronized.
+If you change:
 
-For the safest workflow, treat the repository's main.py as the source of truth and update the Open WebUI registration when the registered main.py needs to change.
+main.py
 
-Avoid Copying __pycache__
+then:
 
-Do not deploy Python cache files such as:
+1. Edit the repository version.
+2. Update the registered Open WebUI source.
+3. Deploy supporting files.
+4. Restart Open WebUI.
+5. Test the tool.
 
-__pycache__/
-*.pyc
+The repository version should remain the source of truth.
 
-into the custom-tools directory.
 
-A copy command such as:
+## 19. Tool vs Function
 
-cp -r source/* destination/
+This runbook describes an Open WebUI Workspace Tool using:
 
-can accidentally copy __pycache__.
+class Tools:
+    ...
 
-Prefer a deployment method that excludes it.
+Do not confuse this with Open WebUI Functions such as:
 
-For example, using rsync:
+Pipe
+Filter
+Action
+Event
 
-rsync -av \
-  --exclude '__pycache__' \
-  --exclude '*.pyc' \
-  source/ \
-  destination/
+They are different extension mechanisms.
 
-This also makes repeated deployments much cleaner because only changed files need to be copied.
 
-Docker Mounting: What the Variables Mean
+## 20. Docker Path Mental Model
 
 Given:
 
 volumes:
   - ${OPENWEBUI_CUSTOMTOOLS}:/custom_tools
 
-and:
-
-OPENWEBUI_CUSTOMTOOLS=~/M2/docker_data/open-webui/custom_tools
-
-the mapping is:
+think:
 
 HOST
-~/M2/docker_data/open-webui/custom_tools
-          │
-          │ Docker bind mount
-          ▼
+~/M2/docker_data/open-webui/custom_tools/
+                |
+                | Docker bind mount
+                v
 CONTAINER
-/custom_tools
+/custom_tools/
+                |
+                v
+PYTHON CODE
+/custom_tools/my_new_tool/
 
-Therefore:
-
-Host:
-~/M2/docker_data/open-webui/custom_tools/comfyui_image/
-
-is visible inside the container as:
-
-/custom_tools/comfyui_image/
-Environment Variables vs Container Paths
-
-An environment variable such as:
+Environment variables such as:
 
 COMFYUI_IMAGE_TOOL_DIR: /custom_tools/comfyui_image
 
-is a container path.
+are therefore container paths.
 
-It tells the Python code where the tool's files are located inside the container.
 
-It should normally remain:
+## 21. Recommended Repository Structure
 
-/custom_tools/comfyui_image
-
-Do not replace it with the host path:
-
-~/M2/docker_data/open-webui/custom_tools/comfyui_image
-
-because the Python code is running inside the container and sees the mounted path, not the host filesystem path.
-
-A useful mental model is:
-
-Host path
-    │
-    │ Docker mount
-    ▼
-Container path
-    │
-    │ Python application uses this
-    ▼
-/custom_tools/comfyui_image
-Recommended Repository Structure
-
-A practical long-term layout might be:
+A practical long-term structure:
 
 AI/
 ├── docker-compose.yml
@@ -545,153 +633,198 @@ AI/
         ├── config.py
         └── ...
 
-The repository becomes the place where you develop and version-control the source.
+The repository is where you develop and version-control the source.
 
-The mounted directory becomes the deployed copy that Open WebUI can access:
+The mounted directory is the deployed runtime copy:
 
 ~/M2/docker_data/open-webui/custom_tools/
+
 ├── comfyui_image/
 └── my_new_tool/
-Key Things to Remember
-1. Registration is not the same as mounting
 
-Registering:
 
-my_new_tool
+## 22. Complete New Tool Procedure
 
-with Open WebUI creates the tool entry.
+When creating a completely new tool:
 
-Mounting:
+### Step 1 — Create the repository folder
 
-/custom_tools/my_new_tool/
+tools/my_new_tool/
 
-makes the filesystem files available inside the container.
+### Step 2 — Create main.py
 
-Both can matter for a multi-file tool.
-
-2. The tool ID is important
-
-For example:
-
-comfyui_image_tools
-
-is the stable ID used by Open WebUI.
-
-3. main.py contains the Open WebUI-facing Tools class
-
-For example:
+Include:
 
 class Tools:
-    def generate_image(...):
-        ...
-4. Supporting modules live beside main.py
+    ...
+
+### Step 3 — Add supporting files
 
 For example:
 
 main.py
 config.py
-routing.py
-workflows.py
-5. Use container paths inside Python
+helpers.py
 
-Use:
+### Step 4 — Register the tool with Open WebUI
 
-/custom_tools/my_new_tool
+Register:
 
-not the host path.
+ID
+Name
+actual contents of main.py
 
-6. Restart after source changes
+Do NOT register a filesystem path.
 
-For this setup, restarting Open WebUI after deploying Python changes is the safest workflow.
+### Step 5 — Deploy the tool directory
 
-7. Don't deploy __pycache__
+Copy:
 
-Keep:
+tools/my_new_tool/
+
+to:
+
+$OPENWEBUI_CUSTOMTOOLS/my_new_tool/
+
+Exclude:
 
 __pycache__/
 *.pyc
 
-out of the deployed tool directory.
+### Step 6 — Restart Open WebUI
 
-8. Test registration separately from runtime loading
+docker restart open-webui
 
-First verify:
+### Step 7 — Verify registration
+
+curl -s \
+  -H "Authorization: Bearer $OPENWEBUI_API_KEY" \
+  "http://localhost:3000/api/v1/tools/" \
+  | python -m json.tool
+
+### Step 8 — Test direct loading
+
+Use:
+
+load_tool_module_by_id("my_new_tool")
+
+### Step 9 — Test from Open WebUI
+
+Attach the tool to the intended model and call one of its functions.
+
+
+## 23. Quick Troubleshooting
+
+### Tool does not appear in Open WebUI
+
+Check:
 
 /api/v1/tools/
 
-Then verify:
+If it is missing, the registration step has failed or the ID is wrong.
 
-load_tool_module_by_id(...)
+### Tool appears but fails to load
 
-Then test the tool through the UI.
+Check:
 
-ComfyUI Image Tools: Current Example
+docker logs --since 5m open-webui
 
-The existing tool demonstrates the complete architecture.
+Then run the direct loading test.
 
-Open WebUI registration:
+### Import error
 
-ID:
-comfyui_image_tools
+Example:
 
-Name:
-ComfyUI Image Tools
+ModuleNotFoundError: No module named 'helpers'
 
-Container directory:
+Check that:
 
-/custom_tools/comfyui_image/
+/custom_tools/my_new_tool/helpers.py
 
-Configured through:
+exists inside the container.
 
-COMFYUI_IMAGE_TOOL_DIR: /custom_tools/comfyui_image
+### Changes are not appearing
 
-Supporting modules are loaded from that directory.
+Check that:
 
-A successful direct load currently looks like:
+1. The repository was deployed.
+2. The registered `main.py` was updated if `main.py` changed.
+3. Open WebUI was restarted.
 
-[COMFYUI_IMAGE] main.py loaded
-[COMFYUI_IMAGE] comfyui.py loaded
-[COMFYUI_IMAGE] openwebui.py loaded
-[COMFYUI_IMAGE] routing.py loaded
-[COMFYUI_IMAGE] workflows.py loaded
-[COMFYUI_IMAGE] Tools.__init__()
-...
-LOAD OK
+### Works on the host but not in Docker
 
-That confirms the registered tool can be loaded together with its supporting modules.
+Check:
 
-Future Automation
+- Python package availability inside the container.
+- Environment variables.
+- Container filesystem paths.
+- Network connectivity from the container.
 
-Once the manual process is understood, it is reasonable to automate it.
 
-A future deployment script could:
+## 24. Future Automation
 
-Read OPENWEBUI_CUSTOMTOOLS from .env.
-Copy a selected tool directory.
-Exclude __pycache__ and .pyc files.
-Read main.py.
-Register the tool through the Open WebUI API if it does not already exist.
-Update the registration if main.py changed.
-Restart Open WebUI.
-Run a load test.
-Report success/failure.
+Once the manual workflow is understood, it can be automated.
 
-It is worth keeping the manual process working first, however. Automation should reproduce a known-good workflow rather than hide what Open WebUI is doing.
+A deployment script could:
 
-Quick Checklist
+1. Read `OPENWEBUI_CUSTOMTOOLS`.
+2. Select a tool from the repository.
+3. Copy its files.
+4. Exclude `__pycache__` and `.pyc`.
+5. Read `main.py`.
+6. Register the tool if it does not exist.
+7. Update the registration when `main.py` changes.
+8. Restart Open WebUI.
+9. Run a load test.
+10. Report success or failure.
+
+The repository should remain the source of truth.
+
+Automation should reproduce the known-good manual workflow rather than hide what Open WebUI is doing.
+
+
+## 25. Final Checklist
 
 When creating a new tool:
 
- Create a unique tool ID.
- Create the tool directory in the repository.
- Create main.py.
- Add a Tools class.
- Add supporting modules/files.
- Copy the directory to OPENWEBUI_CUSTOMTOOLS.
- Exclude __pycache__ and .pyc.
- Register the tool with Open WebUI.
- Verify it appears in /api/v1/tools/.
- Restart Open WebUI.
- Test load_tool_module_by_id().
- Attach the tool to a model.
- Test the tool from the Open WebUI UI.
+- [ ] Create a unique tool ID.
+- [ ] Create the tool directory in the Git repository.
+- [ ] Create `main.py`.
+- [ ] Add the `Tools` class.
+- [ ] Add supporting modules/files.
+- [ ] Register the tool with Open WebUI.
+- [ ] Put the actual `main.py` source into the registration.
+- [ ] Do NOT register a path to `main.py`.
+- [ ] Copy the tool directory to `$OPENWEBUI_CUSTOMTOOLS`.
+- [ ] Exclude `__pycache__` and `.pyc`.
+- [ ] Verify the tool appears in `/api/v1/tools/`.
+- [ ] Restart Open WebUI.
+- [ ] Test `load_tool_module_by_id()`.
+- [ ] Confirm supporting imports work.
+- [ ] Attach the tool to the intended model.
+- [ ] Test the tool from the Open WebUI UI.
+
+
+## The Short Version
+
+For future reference, the essential workflow is:
+
+1. Create tool in Git repo.
+2. Register tool with Open WebUI.
+   - Register the actual `main.py` contents.
+   - Do not register a path to `main.py`.
+3. Copy the tool folder to `$OPENWEBUI_CUSTOMTOOLS`.
+4. Restart Open WebUI.
+5. Open WebUI loads the registered `main.py`.
+6. `main.py` imports supporting files from `/custom_tools/my_new_tool/`.
+7. Test the tool.
+
+Remember:
+
+The database registration tells Open WebUI **what tool to execute**.
+
+The `/custom_tools` mount provides **the additional files that the registered tool needs at runtime**.
+
+The Git repository is the source of truth.
+
+The Open WebUI registration and mounted directory are the deployed runtime state.
