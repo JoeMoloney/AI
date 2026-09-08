@@ -32,37 +32,48 @@ OTHER_SAMPLER_NODE = "48:33"
 # ------------------------------------------------------------
 
 MODEL_WORKFLOWS = {
-"gemma4:12b-ImagePrompter_Editing": {
-"name": "Flux Dev",
+"gemma4:26B_Flux": {
+"name": "gemma4:26B_Flux",
 "generate": "flux_dev_checkpoint.json",
 "edit": "flux_kontext_dev_basic.json",
 },
-"Qwen3-VL-8B-Instruct-Unc-GGUF": {
-"name": "Flux Dev UNC",
-"generate": "flux_dev_checkpoint_unc.json",
-"edit": None,
+"gemma4:26B_Flux2": {
+"name": "gemma4:26B_Flux2",
+"generate": "image_flux2_text_to_image_9b.json",
+"edit": "image_flux2_klein_image_edit_4b_base.json",
 },
-"Qwen3-VL-8B-Instruct-Unc-Ani-GGUF": {
-"name": "NetaYume Lumina T2I UNC",
-"generate": "image_netayume_lumina_t2i_unc.json",
-"edit": None,
-},
-"Qwen3-VL-8B-Instruct-Unc-GGUF_V2": {
-"name": "Flux Dev UNC V2",
-"generate": "flux_dev_checkpoint_unc_V2.json",
-"edit": None,
-},
-"Qwen3-VL-8B-Instruct-Unc-Ani-GGUF_V2": {
-"name": "NetaYume Lumina T2I UNC V2",
-"generate": "image_netayume_lumina_t2i_unc_V2.json",
-"edit": None,
-},
-"Gemma_4_26B_Chroma": {
-"name": "Gemma_4_26B_Chroma",
+"gemma4:26B_Chroma": {
+"name": "gemma4:26B_Chroma",
 "generate": "image_chroma_text_to_image.json"
 },
-"Gemma_4_26B_Chroma_Radiance": {
-"name": "Gemma_4_26B_Chroma_Radiance",
+"gemma4:26B_ChromaRadiance": {
+"name": "gemma4:26B_ChromaRadiance",
 "generate": "image_chroma1_radiance_text_to_image.json"
+},
+"gemma4:26B_Netayume": {
+"name": "gemma4:26B_Netayume",
+"generate": "image_netayume_lumina_t2i.json"
+},
+"Qwen3VL8B:Q8_0_Flux": {
+"name": "Qwen3VL8B:Q8_0_Flux",
+"generate": "flux_dev_checkpoint.json",
+"edit": "flux_kontext_dev_basic.json",
+},
+"Qwen3VL8B:Q8_0_Flux2": {
+"name": "Qwen3VL8B:Q8_0_Flux2",
+"generate": "image_flux2_text_to_image_9b.json",
+"edit": "image_flux2_klein_image_edit_4b_base.json",
+},
+"Qwen3VL8B:Q8_0_Chroma": {
+"name": "Qwen3VL8B:Q8_0_Chroma",
+"generate": "image_chroma_text_to_image.json"
+},
+"Qwen3VL8B:Q8_0_ChromaRadiance": {
+"name": "Qwen3VL8B:Q8_0_ChromaRadiance",
+"generate": "image_chroma1_radiance_text_to_image.json"
+},
+"Qwen3VL8B:Q8_0_Netayume": {
+"name": "Qwen3VL8B:Q8_0_Netayume",
+"generate": "image_netayume_lumina_t2i.json"
 },
 }

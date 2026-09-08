@@ -357,53 +357,92 @@ class WorkflowManager:
 
         if edit_previous:
 
-            sampler_node = EDIT_SAMPLER_NODE
-
+            # For editing workflows, we need to find the correct sampler node
+            # Look through all nodes to find any KSampler or related type node
+            
+            # Find all possible sampler nodes by class type
+            sampler_nodes = []
+            for node_id, node_data in workflow.items():
+                if not isinstance(node_data, dict):
+                    continue
+                    
+                class_type = node_data.get("class_type", "")
+                
+                # Look for common sampler node types used in image editing workflows  
+                if ("sampler" in class_type.lower() or 
+                    "ksampler" in class_type.lower() or
+                    class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect")):
+                    sampler_nodes.append(node_id)
+            
+            # If we found sampler nodes, use the first one.
+            if sampler_nodes:
+                sampler_node = sampler_nodes[0]
+            else:
+                # As a fallback, still check for the expected ID but don't assume it exists
+                # This preserves compatibility for other workflow types  
+                sampler_node = EDIT_SAMPLER_NODE
+                
         elif workflow_filename.startswith("flux_"):
 
-            latent_node = FLUX_LATENT_NODE
-            sampler_node = FLUX_SAMPLER_NODE
+            # For flux workflows, try to find nodes by class type first, then fall back to fixed IDs
+            latent_nodes = []
+            sampler_nodes = []
+            
+            for node_id, node_data in workflow.items():
+                if not isinstance(node_data, dict):
+                    continue
+                    
+                class_type = node_data.get("class_type", "")
+                
+                # Look for flux-specific nodes
+                if "latent" in class_type.lower() and ("sd3" in class_type.lower() or "flux" in class_type.lower()):
+                    latent_nodes.append(node_id)
+                elif class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect"):
+                    sampler_nodes.append(node_id)
+            
+            # Use the first matching node found if any, otherwise fall back to configured IDs
+            if latent_nodes:
+                latent_node = latent_nodes[0]
+            else:
+                latent_node = FLUX_LATENT_NODE
+                
+            if sampler_nodes:  
+                sampler_node = sampler_nodes[0]
+            else:
+                sampler_node = FLUX_SAMPLER_NODE
             
         else:
-            # For non-flux workflows, try to find existing nodes first
-            # If they have the expected IDs, use those (existing behavior)
-            if OTHER_LATENT_NODE in workflow:
-                latent_node = OTHER_LATENT_NODE
-                sampler_node = OTHER_SAMPLER_NODE
+            # For non-flux workflows, try to detect nodes by class type
+            # This handles workflows with different node ID conventions without requiring changes
+            
+            # Find all nodes of the appropriate types
+            latent_nodes = []
+            sampler_nodes = []
+            
+            for node_id, node_data in workflow.items():
+                if not isinstance(node_data, dict):
+                    continue
+                    
+                class_type = node_data.get("class_type", "")
+                
+                # Look for nodes that are likely to be the latent/sampler
+                if "latent" in class_type.lower() and "image" in class_type.lower():
+                    latent_nodes.append(node_id)
+                elif class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect"):
+                    sampler_nodes.append(node_id)
+            
+            # Use first found matching nodes (most common case)
+            if latent_nodes:
+                latent_node = latent_nodes[0]
             else:
-                # For other workflow formats like yours which use different node IDs,
-                # try to detect nodes by class type but be more precise about node selection
-                # This allows workflows like Chroma/Radiance to work without modification
+                # If no latent node found, fall back to configured ID
+                latent_node = OTHER_LATENT_NODE
                 
-                # Check if we can find latent and sampler nodes
-                latent_nodes = []
-                sampler_nodes = []
-                
-                for node_id, node_data in workflow.items():
-                    if not isinstance(node_data, dict):
-                        continue
-                        
-                    class_type = node_data.get("class_type", "")
-                    
-                    # Look for nodes that are likely to be the latent/sampler
-                    # This handles different formats without requiring node ID changes
-                    if "latent" in class_type.lower() and "image" in class_type.lower():
-                        latent_nodes.append(node_id)
-                    elif class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect"):
-                        sampler_nodes.append(node_id)
-                
-                # Use first found matching nodes (most common case)
-                if latent_nodes:
-                    latent_node = latent_nodes[0]
-                else:
-                    # If no node found, use fallback
-                    latent_node = OTHER_LATENT_NODE
-                    
-                if sampler_nodes:
-                    sampler_node = sampler_nodes[0]
-                else:
-                    # If no node found, use fallback  
-                    sampler_node = OTHER_SAMPLER_NODE
+            if sampler_nodes:
+                sampler_node = sampler_nodes[0]
+            else:
+                # If no sampler node found, fall back to configured ID  
+                sampler_node = OTHER_SAMPLER_NODE
 
         # --------------------------------------------------------
         # Editing
@@ -417,29 +456,39 @@ class WorkflowManager:
                     "image base64 data was supplied."
                 )
 
-            if EDIT_IMAGE_NODE not in workflow:
+            # Find all LoadImageFromBase64 nodes dynamically instead of using hardcoded ID
+            image_nodes = {}
+            for node_id, node in workflow.items():
+                if isinstance(node, dict) and node.get("class_type") == "LoadImageFromBase64":
+                    image_nodes[node_id] = node
+
+            if not image_nodes:
                 raise ValueError(
-                    "Edit workflow does not contain image "
-                    "input node "
-                    f"`{EDIT_IMAGE_NODE}`."
+                    "Edit workflow does not contain any "
+                    "LoadImageFromBase64 nodes."
                 )
 
-            image_node = workflow[EDIT_IMAGE_NODE]
+            # Update the first found image node (should be only one in most cases)
+            image_node_id = list(image_nodes.keys())[0]
+            
+            # Ensure that this specific node has a valid inputs dict
+            if image_node_id not in workflow:
+                raise ValueError(f"Workflow does not contain expected node {image_node_id}")
+                
+            image_node = workflow[image_node_id]
 
             if not isinstance(image_node, dict):
                 raise ValueError(
-                    f"Edit image node `{EDIT_IMAGE_NODE}` "
+                    f"Edit image node `{image_node_id}` "
                     "is not a valid workflow node."
                 )
 
             image_inputs = image_node.get("inputs")
 
+            # Create inputs dict if it doesn't exist
             if not isinstance(image_inputs, dict):
-                raise ValueError(
-                    "Image input node "
-                    f"`{EDIT_IMAGE_NODE}` does not contain "
-                    "valid inputs."
-                )
+                image_inputs = {}
+                image_node["inputs"] = image_inputs
 
             image_inputs["data"] = image_base64
 
@@ -455,13 +504,17 @@ class WorkflowManager:
                 )
 
             # Check that the node actually exists in workflow (needed because we may have detected it dynamically)
-            # Allow dynamic nodes to pass through, but ensure they exist in the workflow at least
-            if latent_node not in workflow and not (OTHER_LATENT_NODE in workflow): 
-                raise ValueError(
-                    f"Workflow `{workflow_filename}` "
-                    "does not contain expected latent node "
-                    f"`{latent_node}`."
-                )
+            if latent_node not in workflow:
+                # If we're using dynamic detection instead of fixed IDs, validate at least one exists
+                if OTHER_LATENT_NODE in workflow:
+                    # Use fallback if no dynamic match found but original ID does exist
+                    pass  
+                else:
+                    raise ValueError(
+                        f"Workflow `{workflow_filename}` "
+                        "does not contain expected latent node "
+                        f"`{latent_node}` or fallback `{OTHER_LATENT_NODE}`."
+                    )
 
             latent_node_data = workflow[latent_node]
 
@@ -496,9 +549,9 @@ class WorkflowManager:
         # --------------------------------------------------------
 
         if sampler_node not in workflow:
-            # If flexible detection was used and the node was found, 
-            # just try to use the node ID directly - might be a valid case
-            pass  # Let it proceed since we'll validate with inputs
+            # If we're using dynamic detection instead of fixed IDs, 
+            # don't enforce it to exist at this point (let validation happen later)
+            pass
 
         sampler_node_data = workflow.get(sampler_node)
 
