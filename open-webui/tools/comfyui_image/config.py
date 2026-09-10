@@ -32,16 +32,6 @@ OTHER_SAMPLER_NODE = "48:33"
 # ------------------------------------------------------------
 
 MODEL_WORKFLOWS = {
-"gemma4:26B_Flux": {
-"name": "gemma4:26B_Flux",
-"generate": "flux_dev_checkpoint.json",
-"edit": "flux_kontext_dev_basic.json",
-},
-"gemma4:26B_Flux2": {
-"name": "gemma4:26B_Flux2",
-"generate": "image_flux2_text_to_image_9b.json",
-"edit": "image_flux2_klein_image_edit_4b_base.json",
-},
 "gemma4:26B_Chroma": {
 "name": "gemma4:26B_Chroma",
 "generate": "image_chroma_text_to_image.json"
@@ -62,7 +52,7 @@ MODEL_WORKFLOWS = {
 "Qwen3VL8B:Q8_0_Flux2": {
 "name": "Qwen3VL8B:Q8_0_Flux2",
 "generate": "image_flux2_text_to_image_9b.json",
-"edit": "image_flux2_klein_image_edit_4b_base.json",
+"edit": "image_flux2_klein_image_edit_9b_base.json",
 },
 "Qwen3VL8B:Q8_0_Chroma": {
 "name": "Qwen3VL8B:Q8_0_Chroma",
