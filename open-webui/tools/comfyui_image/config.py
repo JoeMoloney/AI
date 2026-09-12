@@ -12,10 +12,13 @@ DEFAULT_EDIT_DENOISE = 1.0
 MIN_EDIT_DENOISE = 0.0
 MAX_EDIT_DENOISE = 1.0
 
-# Flux Kontext Dev editing workflow node IDs.
-
-EDIT_IMAGE_NODE = "196"
-EDIT_SAMPLER_NODE = "192:31"
+# FLUX.2 Klein image-edit workflow node IDs.
+#
+# Keep these explicit so Python never depends on JSON object ordering when
+# deciding which base64 image goes into which workflow input.
+SINGLE_EDIT_IMAGE_NODE = "131"
+MULTI_EDIT_PRIMARY_IMAGE_NODE = "132"
+MULTI_EDIT_REFERENCE_IMAGE_NODE = "133"
 
 # ------------------------------------------------------------
 # GENERATION WORKFLOW NODE IDs
@@ -32,38 +35,22 @@ OTHER_SAMPLER_NODE = "48:33"
 # ------------------------------------------------------------
 
 MODEL_WORKFLOWS = {
-"gemma4:26B_Chroma": {
-"name": "gemma4:26B_Chroma",
-"generate": "image_chroma_text_to_image.json"
-},
-"gemma4:26B_ChromaRadiance": {
-"name": "gemma4:26B_ChromaRadiance",
-"generate": "image_chroma1_radiance_text_to_image.json"
-},
-"gemma4:26B_Netayume": {
-"name": "gemma4:26B_Netayume",
-"generate": "image_netayume_lumina_t2i.json"
-},
-"Qwen3VL8B:Q8_0_Flux": {
-"name": "Qwen3VL8B:Q8_0_Flux",
-"generate": "flux_dev_checkpoint.json",
-"edit": "flux_kontext_dev_basic.json",
-},
-"Qwen3VL8B:Q8_0_Flux2": {
-"name": "Qwen3VL8B:Q8_0_Flux2",
+"qwen3-vl:30b-a3b-instruct": {
+"name": "qwen3-vl:30b-a3b-instruct",
 "generate": "image_flux2_text_to_image_9b.json",
 "edit": "image_flux2_klein_image_edit_9b_base.json",
+"reference_edit": "image_flux2_klein_image_edit_9b_base_multi.json",
 },
-"Qwen3VL8B:Q8_0_Chroma": {
-"name": "Qwen3VL8B:Q8_0_Chroma",
+"qwen3-vl:30b-a3b-instruct_Chroma": {
+"name": "qwen3-vl:30b-a3b-instruct_Chroma",
 "generate": "image_chroma_text_to_image.json"
 },
-"Qwen3VL8B:Q8_0_ChromaRadiance": {
-"name": "Qwen3VL8B:Q8_0_ChromaRadiance",
+"qwen3-vl:30b-a3b-instruct_ChromaRadiance": {
+"name": "qwen3-vl:30b-a3b-instruct_ChromaRadiance",
 "generate": "image_chroma1_radiance_text_to_image.json"
 },
-"Qwen3VL8B:Q8_0_Netayume": {
-"name": "Qwen3VL8B:Q8_0_Netayume",
+"qwen3-vl:30b-a3b-instruct_Netayume": {
+"name": "qwen3-vl:30b-a3b-instruct_Netayume",
 "generate": "image_netayume_lumina_t2i.json"
 },
 }

@@ -369,6 +369,8 @@ class Tools:
         steps: Optional[int] = None,
         seed: int = -1,
         edit_previous: bool = False,
+        reference_edit: bool = False,
+        primary_image_index: Optional[int] = None,
         denoise: Optional[float] = None,
         __model__: Optional[dict] = None,
         __event_emitter__=None,
@@ -376,6 +378,24 @@ class Tools:
         __chat_id__: Optional[str] = None,
         __message_id__: Optional[str] = None,
     ) -> str:
+        """Generate or edit an image with ComfyUI.
+
+        Use edit_previous=False for a new text-to-image generation.
+        Use edit_previous=True for a normal single-image edit.
+        Use reference_edit=True when one image should be edited using a
+        second image as visual reference.
+
+        Reference-edit defaults are deterministic:
+        - Two images attached to the current user request: image 1 is the
+          main image and image 2 is the reference image.
+        - One image attached to the current user request: the latest image
+          already in the active chat thread is the main image and the new
+          upload is the reference image.
+
+        Set primary_image_index=2 only when visual understanding shows that
+        candidate image 2 should be the main image instead. Omit it (or use
+        1) to keep the default ordering.
+        """
 
         print(
             "[COMFYUI_IMAGE] generate_image() START "
@@ -384,7 +404,9 @@ class Tools:
             f"height={height} "
             f"steps={steps} "
             f"seed={seed} "
-            f"edit_previous={edit_previous}",
+            f"edit_previous={edit_previous} "
+            f"reference_edit={reference_edit} "
+            f"primary_image_index={primary_image_index}",
             flush=True,
         )
 
@@ -425,6 +447,11 @@ class Tools:
 
         workflow_name = route["name"]
 
+        # reference_edit is a specialized edit mode. Treat it as editing
+        # even if the model omitted edit_previous=True.
+        if reference_edit:
+            edit_previous = True
+
         # ====================================================
         # DETERMINE WORKFLOW
         # ====================================================
@@ -434,6 +461,7 @@ class Tools:
                 self.router.get_workflow_filename(
                     model_name,
                     edit_previous,
+                    reference_edit=reference_edit,
                 )
             )
             print(
@@ -534,6 +562,7 @@ class Tools:
         # ====================================================
 
         image_base64 = None
+        reference_image_base64 = None
         image_diagnostics = None
 
         if edit_previous:
@@ -547,17 +576,37 @@ class Tools:
 
             await self._status(
                 __event_emitter__,
-                "Preparing image edit...",
+                (
+                    "Preparing two-image reference edit..."
+                    if reference_edit
+                    else "Preparing image edit..."
+                ),
             )
 
             try:
-
-                (
-                    image_base64,
-                    image_diagnostics,
-                ) = await (
-                    self.openwebui
-                    .get_previous_image_base64(
+                if reference_edit:
+                    (
+                        encoded_images,
+                        image_diagnostics,
+                    ) = await self.openwebui.get_reference_edit_images_base64(
+                        __chat_id__,
+                        __message_id__,
+                        primary_image_index=primary_image_index,
+                        status_callback=lambda description: (
+                            self._status(
+                                __event_emitter__,
+                                description,
+                            )
+                        ),
+                    )
+                    # The selector always returns [MAIN, REFERENCE].
+                    image_base64 = encoded_images[0]
+                    reference_image_base64 = encoded_images[1]
+                else:
+                    (
+                        image_base64,
+                        image_diagnostics,
+                    ) = await self.openwebui.get_previous_image_base64(
                         __chat_id__,
                         __message_id__,
                         lambda description: (
@@ -567,16 +616,13 @@ class Tools:
                             )
                         ),
                     )
-                )
 
             except Exception as e:
-
                 return (
-                    "❌ Could not retrieve the previous "
-                    "image for editing.\n\n"
+                    "❌ Could not retrieve the image"
+                    f"{'s' if reference_edit else ''} for editing.\n\n"
                     f"Chat ID: `{__chat_id__}`\n"
-                    f"Current message ID: "
-                    f"`{__message_id__}`\n\n"
+                    f"Current message ID: `{__message_id__}`\n\n"
                     "Error:\n"
                     f"`{type(e).__name__}: {e}`\n\n"
                     "Use `diagnose_previous_image` "
@@ -588,9 +634,9 @@ class Tools:
         # ====================================================
 
         mode_name = (
-            "editing"
-            if edit_previous
-            else "generating"
+            "reference editing"
+            if reference_edit
+            else ("editing" if edit_previous else "generating")
         )
 
         await self._status(
@@ -615,6 +661,7 @@ class Tools:
                 seed,
                 edit_previous=edit_previous,
                 image_base64=image_base64,
+                reference_image_base64=reference_image_base64,
                 denoise=effective_denoise,
                 negative_prompt=negative_prompt,
             )
@@ -819,8 +866,14 @@ class Tools:
                     )
 
             # ====================================================
-            # ATTACH
+            # ATTACH + LIVE FILE DISPLAY
             # ====================================================
+
+            # Start with the file entries we constructed. If Open WebUI
+            # returns canonical attachment objects after persistence, use
+            # those exact objects for the live UI event. This mirrors the
+            # behavior of Open WebUI's built-in image tools.
+            display_files = attached_files
 
             if (
                 __chat_id__
@@ -830,7 +883,7 @@ class Tools:
 
                 try:
 
-                    await (
+                    canonical_files = await (
                         self.openwebui
                         .attach_files_to_message(
                             __chat_id__,
@@ -838,6 +891,9 @@ class Tools:
                             attached_files,
                         )
                     )
+
+                    if canonical_files is not None:
+                        display_files = canonical_files
 
                 except Exception as e:
 
@@ -849,20 +905,18 @@ class Tools:
                         f"`{type(e).__name__}: {e}`"
                     )
 
-            # ====================================================
-            # EMIT FILE EVENT
-            # ====================================================
-
+            # Persisting the files updates the stored chat. This event
+            # updates the currently open browser immediately.
             if (
                 __event_emitter__
-                and attached_files
+                and display_files
             ):
 
                 await __event_emitter__(
                     {
                         "type": "chat:message:files",
                         "data": {
-                            "files": attached_files,
+                            "files": display_files,
                         },
                     }
                 )
@@ -875,7 +929,7 @@ class Tools:
                 __event_emitter__,
                 (
                     "Finished "
-                    f"{'editing' if edit_previous else 'generating'} "
+                    f"{mode_name.capitalize()} "
                     f"with {workflow_name}."
                 ),
                 done=True,
@@ -890,26 +944,41 @@ class Tools:
                 source_info = ""
 
                 if image_diagnostics:
-
-                    source_info = (
-                        "\n\n"
-                        "Edited source:\n"
-                        "- File: "
-                        f"`{image_diagnostics['filename']}`\n"
-                        "- File ID: "
-                        f"`{image_diagnostics['file_id']}`\n"
-                        "- Source message: "
-                        f"`{image_diagnostics['source_message_id']}`\n"
-                        "- Source size: "
-                        f"`{image_diagnostics['byte_count']} bytes`\n"
+                    diagnostics_list = (
+                        image_diagnostics
+                        if isinstance(image_diagnostics, list)
+                        else [image_diagnostics]
                     )
+                    source_lines = []
+                    for index, diag in enumerate(diagnostics_list, start=1):
+                        if len(diagnostics_list) > 1:
+                            role = diag.get("image_role")
+                            if role == "main":
+                                label = "Main image"
+                            elif role == "reference":
+                                label = "Reference image"
+                            else:
+                                label = f"Source image {index}"
+                        else:
+                            label = "Edited source"
+                        source_lines.append(
+                            f"{label}:\n"
+                            f"- File: `{diag['filename']}`\n"
+                            f"- File ID: `{diag['file_id']}`\n"
+                            f"- Source message: `{diag['source_message_id']}`\n"
+                            f"- Source size: `{diag['byte_count']} bytes`"
+                        )
+                    source_info = "\n\n" + "\n\n".join(source_lines)
+
+                edit_label = (
+                    "Two-image reference edit completed successfully"
+                    if reference_edit
+                    else "Image edited successfully"
+                )
 
                 return (
-                    "Image edited successfully with "
-                    f"{workflow_name}.\n\n"
-                    f"Seed: `{actual_seed}`\n"
-                    f"Denoise: "
-                    f"`{effective_denoise:.2f}`"
+                    f"{edit_label} with {workflow_name}.\n\n"
+                    f"Seed: `{actual_seed}`"
                     f"{source_info}"
                 )
 

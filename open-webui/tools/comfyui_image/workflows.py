@@ -6,8 +6,9 @@ import random
 
 from .config import (
 DEFAULT_EDIT_DENOISE,
-EDIT_IMAGE_NODE,
-EDIT_SAMPLER_NODE,
+SINGLE_EDIT_IMAGE_NODE,
+MULTI_EDIT_PRIMARY_IMAGE_NODE,
+MULTI_EDIT_REFERENCE_IMAGE_NODE,
 FLUX_LATENT_NODE,
 FLUX_SAMPLER_NODE,
 MAX_EDIT_DENOISE,
@@ -305,6 +306,7 @@ class WorkflowManager:
         seed,
         edit_previous=False,
         image_base64=None,
+        reference_image_base64=None,
         denoise=None,
         negative_prompt=None,
     ):
@@ -312,318 +314,193 @@ class WorkflowManager:
             "[COMFYUI_IMAGE] WorkflowManager.prepare() START "
             f"workflow={workflow_filename!r} "
             f"edit_previous={edit_previous} "
-            f"width={width} "
-            f"height={height} "
-            f"steps={steps} "
-            f"seed={seed}",
+            f"reference_edit={bool(reference_image_base64)} "
+            f"width={width} height={height} steps={steps} seed={seed}",
             flush=True,
         )
-        workflow = copy.deepcopy(
-            self.load(workflow_filename)
-        )
-        print(
-            "[COMFYUI_IMAGE] WorkflowManager.prepare() "
-            "workflow loaded successfully",
-            flush=True,
-        )
-        # --------------------------------------------------------
-        # Replace %prompt% and %positive_prompt%/%negative_prompt%
-        # --------------------------------------------------------
-        
-        for node in workflow.values():
 
+        workflow = copy.deepcopy(self.load(workflow_filename))
+
+        # Replace prompt placeholders wherever they occur.
+        for node in workflow.values():
             if not isinstance(node, dict):
                 continue
-
             inputs = node.get("inputs")
-
             if not isinstance(inputs, dict):
                 continue
-
             for key, value in list(inputs.items()):
-
-                if value == "%prompt%":
-                    inputs[key] = prompt
-                elif value == "%positive_prompt%":
+                if value in ("%prompt%", "%positive_prompt%"):
                     inputs[key] = prompt
                 elif value == "%negative_prompt%":
                     inputs[key] = negative_prompt or ""
 
         # --------------------------------------------------------
-        # Select nodes
+        # Image inputs for edit workflows
         # --------------------------------------------------------
-
-        latent_node = None
-
         if edit_previous:
-
-            # For editing workflows, we need to find the correct sampler node
-            # Look through all nodes to find any KSampler or related type node
-            
-            # Find all possible sampler nodes by class type
-            sampler_nodes = []
-            for node_id, node_data in workflow.items():
-                if not isinstance(node_data, dict):
-                    continue
-                    
-                class_type = node_data.get("class_type", "")
-                
-                # Look for common sampler node types used in image editing workflows  
-                if ("sampler" in class_type.lower() or 
-                    "ksampler" in class_type.lower() or
-                    class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect")):
-                    sampler_nodes.append(node_id)
-            
-            # If we found sampler nodes, use the first one.
-            if sampler_nodes:
-                sampler_node = sampler_nodes[0]
-            else:
-                # As a fallback, still check for the expected ID but don't assume it exists
-                # This preserves compatibility for other workflow types  
-                sampler_node = EDIT_SAMPLER_NODE
-                
-        elif workflow_filename.startswith("flux_"):
-
-            # For flux workflows, try to find nodes by class type first, then fall back to fixed IDs
-            latent_nodes = []
-            sampler_nodes = []
-            
-            for node_id, node_data in workflow.items():
-                if not isinstance(node_data, dict):
-                    continue
-                    
-                class_type = node_data.get("class_type", "")
-                
-                # Look for flux-specific nodes
-                if "latent" in class_type.lower() and ("sd3" in class_type.lower() or "flux" in class_type.lower()):
-                    latent_nodes.append(node_id)
-                elif class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect"):
-                    sampler_nodes.append(node_id)
-            
-            # Use the first matching node found if any, otherwise fall back to configured IDs
-            if latent_nodes:
-                latent_node = latent_nodes[0]
-            else:
-                latent_node = FLUX_LATENT_NODE
-                
-            if sampler_nodes:  
-                sampler_node = sampler_nodes[0]
-            else:
-                sampler_node = FLUX_SAMPLER_NODE
-            
-        else:
-            # For non-flux workflows, try to detect nodes by class type
-            # This handles workflows with different node ID conventions without requiring changes
-            
-            # Find all nodes of the appropriate types
-            latent_nodes = []
-            sampler_nodes = []
-            
-            for node_id, node_data in workflow.items():
-                if not isinstance(node_data, dict):
-                    continue
-                    
-                class_type = node_data.get("class_type", "")
-                
-                # Look for nodes that are likely to be the latent/sampler
-                if "latent" in class_type.lower() and "image" in class_type.lower():
-                    latent_nodes.append(node_id)
-                elif class_type in ("SamplerCustomAdvanced", "KSampler", "KSamplerSelect"):
-                    sampler_nodes.append(node_id)
-            
-            # Use first found matching nodes (most common case)
-            if latent_nodes:
-                latent_node = latent_nodes[0]
-            else:
-                # If no latent node found, fall back to configured ID
-                latent_node = OTHER_LATENT_NODE
-                
-            if sampler_nodes:
-                sampler_node = sampler_nodes[0]
-            else:
-                # If no sampler node found, fall back to configured ID  
-                sampler_node = OTHER_SAMPLER_NODE
-
-        # --------------------------------------------------------
-        # Editing
-        # --------------------------------------------------------
-
-        if edit_previous:
-
             if not image_base64:
                 raise ValueError(
-                    "Editing was requested, but no previous "
-                    "image base64 data was supplied."
+                    "Editing was requested, but no image base64 data "
+                    "was supplied."
                 )
 
-            # Find all LoadImageFromBase64 nodes dynamically instead of using hardcoded ID
-            image_nodes = {}
-            for node_id, node in workflow.items():
-                if isinstance(node, dict) and node.get("class_type") == "LoadImageFromBase64":
-                    image_nodes[node_id] = node
+            if reference_image_base64:
+                expected_nodes = {
+                    MULTI_EDIT_PRIMARY_IMAGE_NODE: image_base64,
+                    MULTI_EDIT_REFERENCE_IMAGE_NODE: reference_image_base64,
+                }
+                expected_count = 2
+            else:
+                expected_nodes = {
+                    SINGLE_EDIT_IMAGE_NODE: image_base64,
+                }
+                expected_count = 1
 
-            if not image_nodes:
+            actual_image_nodes = [
+                node_id
+                for node_id, node in workflow.items()
+                if isinstance(node, dict)
+                and node.get("class_type") == "LoadImageFromBase64"
+            ]
+
+            if len(actual_image_nodes) != expected_count:
                 raise ValueError(
-                    "Edit workflow does not contain any "
-                    "LoadImageFromBase64 nodes."
+                    f"Workflow `{workflow_filename}` contains "
+                    f"{len(actual_image_nodes)} LoadImageFromBase64 node(s), "
+                    f"but this edit mode expects {expected_count}."
                 )
 
-            # Update the first found image node (should be only one in most cases)
-            image_node_id = list(image_nodes.keys())[0]
-            
-            # Ensure that this specific node has a valid inputs dict
-            if image_node_id not in workflow:
-                raise ValueError(f"Workflow does not contain expected node {image_node_id}")
-                
-            image_node = workflow[image_node_id]
+            for node_id, encoded_image in expected_nodes.items():
+                node = workflow.get(node_id)
+                if not isinstance(node, dict):
+                    raise ValueError(
+                        f"Workflow `{workflow_filename}` does not contain "
+                        f"the expected image node `{node_id}`."
+                    )
 
-            if not isinstance(image_node, dict):
-                raise ValueError(
-                    f"Edit image node `{image_node_id}` "
-                    "is not a valid workflow node."
+                if node.get("class_type") != "LoadImageFromBase64":
+                    raise ValueError(
+                        f"Workflow node `{node_id}` is not a "
+                        "LoadImageFromBase64 node."
+                    )
+
+                inputs = node.get("inputs")
+                if not isinstance(inputs, dict):
+                    inputs = {}
+                    node["inputs"] = inputs
+
+                inputs["data"] = encoded_image
+
+                role = (
+                    "primary"
+                    if node_id == MULTI_EDIT_PRIMARY_IMAGE_NODE
+                    else (
+                        "reference"
+                        if node_id == MULTI_EDIT_REFERENCE_IMAGE_NODE
+                        else "single-edit"
+                    )
                 )
-
-            image_inputs = image_node.get("inputs")
-
-            # Create inputs dict if it doesn't exist
-            if not isinstance(image_inputs, dict):
-                image_inputs = {}
-                image_node["inputs"] = image_inputs
-
-            image_inputs["data"] = image_base64
+                print(
+                    "[COMFYUI_IMAGE] Injected "
+                    f"{role} image into LoadImageFromBase64 node {node_id}",
+                    flush=True,
+                )
 
         # --------------------------------------------------------
         # Generation dimensions
         # --------------------------------------------------------
-
         else:
+            width_set = False
+            height_set = False
 
-            if not latent_node:
-                raise ValueError(
-                    "No latent node was selected."
-                )
+            # The supplied Flux.2 generation workflow exposes Width and
+            # Height as PrimitiveInt nodes. Prefer those when present.
+            for node in workflow.values():
+                if not isinstance(node, dict):
+                    continue
+                inputs = node.get("inputs")
+                meta = node.get("_meta", {})
+                if not isinstance(inputs, dict):
+                    continue
 
-            # Check that the node actually exists in workflow (needed because we may have detected it dynamically)
-            if latent_node not in workflow:
-                # If we're using dynamic detection instead of fixed IDs, validate at least one exists
-                if OTHER_LATENT_NODE in workflow:
-                    # Use fallback if no dynamic match found but original ID does exist
-                    pass  
-                else:
-                    raise ValueError(
-                        f"Workflow `{workflow_filename}` "
-                        "does not contain expected latent node "
-                        f"`{latent_node}` or fallback `{OTHER_LATENT_NODE}`."
-                    )
+                title = str(meta.get("title", "")).strip().lower()
+                if node.get("class_type") == "PrimitiveInt":
+                    if title == "width":
+                        inputs["value"] = int(width)
+                        width_set = True
+                    elif title == "height":
+                        inputs["value"] = int(height)
+                        height_set = True
 
-            latent_node_data = workflow[latent_node]
-
-            if not isinstance(
-                latent_node_data,
-                dict,
-            ):
-                raise ValueError(
-                    f"Workflow latent node `{latent_node}` "
-                    "is invalid."
-                )
-
-            latent_inputs = latent_node_data.get(
-                "inputs"
-            )
-
-            if not isinstance(
-                latent_inputs,
-                dict,
-            ):
-                raise ValueError(
-                    f"Workflow `{workflow_filename}` latent "
-                    f"node `{latent_node}` does not contain "
-                    "valid inputs."
-                )
-
-            latent_inputs["width"] = int(width)
-            latent_inputs["height"] = int(height)
+            # Fallback for workflows with scalar width/height directly on
+            # a latent node. Do not overwrite linked list inputs.
+            if not (width_set and height_set):
+                for node in workflow.values():
+                    if not isinstance(node, dict):
+                        continue
+                    class_type = str(node.get("class_type", ""))
+                    inputs = node.get("inputs")
+                    if "Latent" not in class_type or not isinstance(inputs, dict):
+                        continue
+                    if not width_set and not isinstance(inputs.get("width"), list):
+                        inputs["width"] = int(width)
+                        width_set = True
+                    if not height_set and not isinstance(inputs.get("height"), list):
+                        inputs["height"] = int(height)
+                        height_set = True
 
         # --------------------------------------------------------
-        # Validate sampler
+        # Resolve seed
         # --------------------------------------------------------
-
-        if sampler_node not in workflow:
-            # If we're using dynamic detection instead of fixed IDs, 
-            # don't enforce it to exist at this point (let validation happen later)
-            pass
-
-        sampler_node_data = workflow.get(sampler_node)
-
-        if not isinstance(
-            sampler_node_data,
-            dict,
-        ):
-            raise ValueError(
-                f"Sampler node `{sampler_node}` is invalid."
-            )
-
-        sampler_inputs = sampler_node_data.get(
-            "inputs"
-        )
-
-        if not isinstance(
-            sampler_inputs,
-            dict,
-        ):
-            raise ValueError(
-                f"Workflow `{workflow_filename}` sampler "
-                f"node `{sampler_node}` does not contain "
-                "valid inputs."
-            )
-
-        # --------------------------------------------------------
-        # Steps
-        # --------------------------------------------------------
-
-        if steps is not None:
-            sampler_inputs["steps"] = int(steps)
-
-        # --------------------------------------------------------
-        # Seed
-        # --------------------------------------------------------
-
         if seed is None:
-
-            seed = random.randint(
-                0,
-                2**63 - 1,
-            )
-
+            seed = random.randint(0, 2**63 - 1)
         else:
-
             try:
                 seed = int(seed)
-
             except (TypeError, ValueError) as e:
-                raise ValueError(
-                    f"Invalid seed value: `{seed}`."
-                ) from e
-
+                raise ValueError(f"Invalid seed value: `{seed}`.") from e
             if seed < 0:
-                seed = random.randint(
-                    0,
-                    2**63 - 1,
-                )
-
-        sampler_inputs["seed"] = int(seed)
+                seed = random.randint(0, 2**63 - 1)
 
         # --------------------------------------------------------
-        # Edit denoise
+        # Steps / seed / denoise controls
         # --------------------------------------------------------
+        resolved_denoise = (
+            self.resolve_edit_denoise(denoise)
+            if edit_previous
+            else None
+        )
 
-        if edit_previous:
+        for node in workflow.values():
+            if not isinstance(node, dict):
+                continue
+            inputs = node.get("inputs")
+            if not isinstance(inputs, dict):
+                continue
 
-            resolved_denoise = self.resolve_edit_denoise(
-                denoise
-            )
+            class_type = node.get("class_type", "")
 
-            sampler_inputs["denoise"] = resolved_denoise
+            # Flux.2 advanced workflows keep steps in Flux2Scheduler.
+            if steps is not None and (
+                class_type == "Flux2Scheduler"
+                or "steps" in inputs
+            ):
+                inputs["steps"] = int(steps)
+
+            # SamplerCustomAdvanced takes a RandomNoise node, so its seed
+            # belongs in RandomNoise.noise_seed. Standard KSampler uses seed.
+            if class_type == "RandomNoise" and "noise_seed" in inputs:
+                inputs["noise_seed"] = int(seed)
+            elif "seed" in inputs:
+                inputs["seed"] = int(seed)
+
+            # Only set denoise on workflows/nodes that actually expose it.
+            if (
+                edit_previous
+                and resolved_denoise is not None
+                and "denoise" in inputs
+            ):
+                inputs["denoise"] = resolved_denoise
 
         print(
             "[COMFYUI_IMAGE] WorkflowManager.prepare() COMPLETE "
@@ -634,7 +511,7 @@ class WorkflowManager:
 
     def _find_nodes_by_class_type(self, workflow):
         """Find latent and sampler nodes by their class types instead of hardcoded IDs."""
-        
+
         # Define expected node classes for different workflow types
         # For Chroma/standard workflows that don't use Flux pattern
         latent_classes = [
@@ -642,36 +519,36 @@ class WorkflowManager:
             "EmptyChromaRadianceLatentImage",
             "EmptyLatentImage"
         ]
-        
+
         sampler_classes = [
             "SamplerCustomAdvanced",
             "KSampler",
             "Sampler"
         ]
-        
+
         found_latent_node = None
         found_sampler_node = None
-        
+
         # Look through all nodes to find the right types
         for node_id, node_data in workflow.items():
             if not isinstance(node_data, dict):
                 continue
-                
+
             class_type = node_data.get("class_type")
-            
+
             if class_type in latent_classes and not found_latent_node:
                 found_latent_node = node_id
             elif class_type in sampler_classes and not found_sampler_node:
                 found_sampler_node = node_id
-                
+
             # If we found both, break early
             if found_latent_node and found_sampler_node:
                 break
-        
+
         if not found_latent_node:
             raise ValueError("Could not find latent node by class type in workflow")
-            
+
         if not found_sampler_node:
             raise ValueError("Could not find sampler node by class type in workflow")
-            
+
         return found_latent_node, found_sampler_node
