@@ -32,6 +32,13 @@ services:
     networks: 
       - selfhost_network
 
+  ghidra-mcp:
+    extends:
+      file: ./ghidra-mcp/docker-compose.yml
+      service: ghidra-mcp
+    networks:
+      - selfhost_network
+
 networks:
   selfhost_network:
     driver: bridge
