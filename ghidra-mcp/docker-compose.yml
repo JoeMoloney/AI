@@ -1,0 +1,33 @@
+services:
+  ghidra-mcp:
+    build:
+      context: .
+      args:
+        GHIDRAMCP_REF: 27f316f80139e2d5dec882519a1bdf4aa46ac04c
+
+    image: ghidra-mcp:local
+    container_name: ghidra-mcp
+    restart: unless-stopped
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    command:
+      - --transport
+      - sse
+      - --mcp-host
+      - 0.0.0.0
+      - --mcp-port
+      - "18081"
+      - --ghidra-server
+      - http://host.docker.internal:18080/
+
+    ports:
+      - "127.0.0.1:18081:18081"
+
+    networks:
+      - selfhost_network
+
+networks:
+  selfhost_network:
+    external: true
