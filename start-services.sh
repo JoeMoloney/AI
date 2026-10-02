@@ -3,6 +3,7 @@
 # start-services.sh — pick which self-hosted AI services to start
 #
 #   ollama is always started (it's the AI engine the rest plug into)
+#   memory-db is always started (postgres+pgvector — persistent LLM memory)
 #
 # services:
 #   1) open-webui   chat UI + search & image tools   :3000
@@ -21,7 +22,7 @@
 #   all      everything except ghidra-mcp
 #
 # input: numbers and/or presets, space- or comma-separated
-#   Enter  start ollama only
+#   Enter  start ollama + memory-db (the always-on pair)
 #   q      quit, start nothing
 #   stop   stop all services in this project (docker compose down)
 #   logs   follow live logs of every service (docker compose logs -f)
@@ -49,9 +50,10 @@ fi
 # --- static data ------------------------------------------------------------
 # menu order; ghidra-mcp last — it's a niche dev bridge, not a daily service
 readonly SERVICES=( open-webui searxng comfyui sillytavern ghidra-mcp )
-declare -A PORT=( [ollama]=11434 [open-webui]=3000 [searxng]=8080 \
+declare -A PORT=( [ollama]=11434 [memory-db]=5432 [open-webui]=3000 [searxng]=8080 \
                   [comfyui]=8188 [sillytavern]=8000 [ghidra-mcp]=18081 )
-readonly -a ENV_FILES=( open-webui/.env open-webui/.apiKey searxng/.env \
+readonly -a ENV_FILES=( memory-db/.env memory-db/.pkey \
+                        open-webui/.env open-webui/.apiKey searxng/.env \
                         comfyui/.env sillytavern/.env )
 
 # selection state — set by pick(), read in start_selected()
@@ -82,7 +84,7 @@ load_env() {
 # --- menu --------------------------------------------------------------------
 draw() {
   local -a L=() line
-  L+=("${B}  AI services — pick what to start${E}  ${D}· ollama always on · http://localhost:${PORT[ollama]}${E}")
+  L+=("${B}  AI services — pick what to start${E}  ${D}· ollama + memory-db always on · http://localhost:${PORT[ollama]}${E}")
   L+=("")
   L+=("  ${D}    1)${E}  ${B}open-webui${E}   ${C}http://localhost:3000${E}  ${D}chat UI + search & image tools${E}")
   L+=("  ${D}    2)${E}  ${B}searxng${E}      ${C}http://localhost:8080${E}  ${D}search backend for open-webui${E}")
@@ -101,7 +103,7 @@ draw() {
   for line in "${L[@]}"; do
     printf '%s\n' "$line"
   done
-  printf '  %stype numbers and/or presets (space or comma) · Enter = ollama only · stop = stop all · logs = tail all · q = quit%s\n' "$D" "$E"
+  printf '  %stype numbers and/or presets (space or comma) · Enter = ollama + memory-db · stop = stop all · logs = tail all · q = quit%s\n' "$D" "$E"
   printf '  > '
 }
 
@@ -171,7 +173,7 @@ preflight() {
 
 # --- start -------------------------------------------------------------------
 start_selected() {
-  local -a targets=( ollama ) pull_targets=( ollama )
+  local -a targets=( ollama memory-db ) pull_targets=( ollama memory-db )
   local svc
 
   for svc in "${SERVICES[@]}"; do
@@ -198,7 +200,10 @@ start_selected() {
   printf '\n'
   printf '  running:\n'
   for svc in "${targets[@]}"; do
-    if [[ $svc == ghidra-mcp ]]; then
+    if [[ $svc == memory-db ]]; then
+      printf '    %-12s localhost:%s   %spostgres+pgvector (LLM memory) — no web UI%s\n' \
+             "$svc" "${PORT[$svc]}" "$D" "$E"
+    elif [[ $svc == ghidra-mcp ]]; then
       printf '    %-12s http://127.0.0.1:%s   %sSSE/MCP endpoint — not a web page%s\n' \
              "$svc" "${PORT[$svc]}" "$D" "$E"
       printf '  %s    note: needs the Ghidra server running on port 18080 (host)%s\n' "$D" "$E"
@@ -218,7 +223,7 @@ stop_all() {
   # down parses the same compose file as up, so it needs the same env vars for
   # the ${VAR}:/path volume specs to expand
   load_env
-  printf '\nstopping: all services in this project (ollama open-webui searxng comfyui sillytavern ghidra-mcp)\n\n'
+  printf '\nstopping: all services in this project (ollama memory-db open-webui searxng comfyui sillytavern ghidra-mcp)\n\n'
   if ! "${COMPOSE[@]}" down; then
     printf '  ! failed: %s down\n' "${COMPOSE[*]}" >&2
     return 11
@@ -235,7 +240,7 @@ show_logs() {
   # `docker compose up` (without -d) gives us. compose still parses the
   # ${VAR}:/path volume specs, so source env first (same reason stop does).
   load_env
-  printf '\nlogs: all services (ollama open-webui searxng comfyui sillytavern ghidra-mcp)\n'
+  printf '\nlogs: all services (ollama memory-db open-webui searxng comfyui sillytavern ghidra-mcp)\n'
   printf '  (Ctrl-C to stop following)\n\n'
   "${COMPOSE[@]}" logs -f
   return $?

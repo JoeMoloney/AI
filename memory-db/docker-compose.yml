@@ -21,3 +21,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - selfhost_network
+
+networks:
+  selfhost_network:
+    external: true

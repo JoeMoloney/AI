@@ -11,6 +11,12 @@ services:
       service: ollama
     networks: 
       - selfhost_network
+  memory-db:
+    extends:
+      file: ./memory-db/docker-compose.yml
+      service: memory-db
+    networks: 
+      - selfhost_network
   searxng:
     extends:
       file: ./searxng/docker-compose.yml
