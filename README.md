@@ -11,6 +11,9 @@ This setup allows you to run multiple AI services locally on your hardware, givi
 
 **Check through the subfolders for each individual service**
 
+
+**Some AI Was Used In The Creation Of This Project**
+
 ## Current Services
 
 ### Open-WebUI
