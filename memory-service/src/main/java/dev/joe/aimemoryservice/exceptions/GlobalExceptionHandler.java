@@ -68,4 +68,17 @@ public class GlobalExceptionHandler {
             .badRequest()
             .body(problem);
     }
+
+    @ExceptionHandler(OllamaClientException.class)
+    public ResponseEntity<ProblemDetail> handleOllamaFailure(OllamaClientException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_GATEWAY,
+            exception.getMessage()
+        );
+        problem.setTitle("Embedding service failure");
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_GATEWAY)
+            .body(problem);
+    }
 }

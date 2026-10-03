@@ -1,5 +1,8 @@
 package dev.joe.aimemoryservice.service;
 
-public class MemoryService {
-    
+import dev.joe.aimemoryservice.dto.MemoryResponse;
+import dev.joe.aimemoryservice.dto.StoreMemoryRequest;
+
+public interface MemoryService {
+    MemoryResponse createMemory(StoreMemoryRequest request);
 }
