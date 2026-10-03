@@ -1,11 +1,11 @@
 package dev.joe.aimemoryservice.domain;
 
-import java.lang.management.MemoryType;
 import java.time.OffsetDateTime;
 
 import dev.joe.aimemoryservice.domain.enums.Confidence;
 import dev.joe.aimemoryservice.domain.enums.MemoryScope;
 import dev.joe.aimemoryservice.domain.enums.MemoryStatus;
+import dev.joe.aimemoryservice.domain.enums.MemoryType;
 
 public record Memory(
     long id,
