@@ -26,7 +26,7 @@ public class MemoryRepository {
         MemoryStatus.fromDatabaseValue(resultSet.getString("status")),
         resultSet.getString("evidence"),
         resultSet.getObject("superseded_by", Long.class),
-        resultSet.getObject("create_at", java.time.OffsetDateTime.class),
+        resultSet.getObject("created_at", java.time.OffsetDateTime.class),
         resultSet.getObject("updated_at", java.time.OffsetDateTime.class)
     );
 
@@ -105,11 +105,13 @@ public class MemoryRepository {
 
         for(int i = 0; i < embedding.length; i++) {
             float value = embedding[i];
+
             if(!Float.isFinite(value))
                 throw new IllegalArgumentException("Embedding contains a non-finite value at index: "+i);
 
             if(i > 0)
-                vector.append(value);
+                vector.append(",");
+            vector.append(value);
         }
 
         return vector.append("]").toString();
