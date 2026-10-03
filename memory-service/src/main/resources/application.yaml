@@ -8,8 +8,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: health,info
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
