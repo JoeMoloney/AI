@@ -74,6 +74,6 @@ public class OllamaClient {
          return embedding;
     }
 
-    private record EmbedRequest(String mode, String input) {}
+    private record EmbedRequest(String model, String input) {}
     private record EmbedResponse(List<float[]> embeddings) {}
 }
