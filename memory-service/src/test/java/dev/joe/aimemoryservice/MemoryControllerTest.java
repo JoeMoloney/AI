@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -116,6 +117,36 @@ class MemoryControllerTest {
                 .andExpect(jsonPath("$.title")
                         .value("Embedding service failure"))
                 .andExpect(jsonPath("$.status").value(502));
+    }
+
+    @Test
+    void returnsMemoryById() throws Exception {
+            when(memoryService.getMemory(1L))
+                            .thenReturn(memoryResponse());
+
+            mockMvc.perform(get("/api/memories/1"))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$.id").value(1))
+                            .andExpect(jsonPath("$.title")
+                                            .value("Large context caused model slowdown"))
+                            .andExpect(jsonPath("$.scope").value("PROJECT"))
+                            .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void reportsMissingMemory() throws Exception {
+            when(memoryService.getMemory(99L))
+                            .thenThrow(new ResourceNotFoundException(
+                                            "Memory",
+                                            99L));
+
+            mockMvc.perform(get("/api/memories/99"))
+                            .andExpect(status().isNotFound())
+                            .andExpect(jsonPath("$.title")
+                                            .value("Resource not found"))
+                            .andExpect(jsonPath("$.detail")
+                                            .value("Memory with ID 99 was not found"))
+                            .andExpect(jsonPath("$.status").value(404));
     }
 
     private static String validRequest() {

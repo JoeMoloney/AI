@@ -209,6 +209,57 @@ class MemoryServiceImplTest {
         );
     }
 
+    @Test
+    void returnsMemoryById() {
+            Memory memory = new Memory(
+                            1L,
+                            1L,
+                            null,
+                            MemoryScope.PROJECT,
+                            MemoryType.FAILURE,
+                            "Large context slowdown",
+                            "Large contexts increased CPU usage.",
+                            Confidence.HIGH,
+                            MemoryStatus.ACTIVE,
+                            "Smaller contexts remained responsive.",
+                            null,
+                            TIMESTAMP,
+                            TIMESTAMP);
+
+            when(memoryRepository.findById(1L))
+                            .thenReturn(Optional.of(memory));
+
+            MemoryResponse response = memoryService.getMemory(1L);
+
+            assertEquals(1L, response.id());
+            assertEquals("Large context slowdown", response.title());
+            assertEquals(MemoryStatus.ACTIVE, response.status());
+
+            verifyNoInteractions(
+                            projectRepository,
+                            sourceRepository,
+                            embeddingService);
+    }
+
+    @Test
+    void rejectsMissingMemory() {
+            when(memoryRepository.findById(99L))
+                            .thenReturn(Optional.empty());
+
+            ResourceNotFoundException exception = assertThrows(
+                            ResourceNotFoundException.class,
+                            () -> memoryService.getMemory(99L));
+
+            assertEquals(
+                            "Memory with ID 99 was not found",
+                            exception.getMessage());
+
+            verifyNoInteractions(
+                            projectRepository,
+                            sourceRepository,
+                            embeddingService);
+    }
+
     private static StoreMemoryRequest request(
             Long projectId,
             Long sourceId,

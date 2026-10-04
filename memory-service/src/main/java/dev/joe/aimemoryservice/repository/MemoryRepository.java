@@ -1,5 +1,7 @@
 package dev.joe.aimemoryservice.repository;
 
+import java.util.Optional;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -92,6 +94,33 @@ public class MemoryRepository {
                 evidence,
                 toVectorLiteral(embedding)
             ); 
+    }
+
+    public Optional<Memory> findById(long id) {
+        String sql = """
+                SELECT
+                    id,
+                    project_id,
+                    source_id,
+                    scope,
+                    memory_type,
+                    title,
+                    content,
+                    confidence,
+                    status,
+                    evidence,
+                    superseded_by,
+                    created_at,
+                    updated_at
+                FROM memories
+                WHERE id = ?
+                """;
+
+        return jdbcTemplate.query(
+            sql,
+            MEMORY_ROW_MAPPER,
+            id
+        ).stream().findFirst();
     }
 
     private static String toVectorLiteral(float[] embedding) {
