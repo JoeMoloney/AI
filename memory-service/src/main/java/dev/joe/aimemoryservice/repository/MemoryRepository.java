@@ -1,5 +1,6 @@
 package dev.joe.aimemoryservice.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -7,6 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import dev.joe.aimemoryservice.domain.Memory;
+import dev.joe.aimemoryservice.domain.ScoredMemory;
 import dev.joe.aimemoryservice.domain.enums.Confidence;
 import dev.joe.aimemoryservice.domain.enums.MemoryScope;
 import dev.joe.aimemoryservice.domain.enums.MemoryStatus;
@@ -30,6 +32,11 @@ public class MemoryRepository {
         resultSet.getObject("superseded_by", Long.class),
         resultSet.getObject("created_at", java.time.OffsetDateTime.class),
         resultSet.getObject("updated_at", java.time.OffsetDateTime.class)
+    );
+
+    private static final RowMapper<ScoredMemory> SCORED_MEMORY_ROW_MAPPER = (resultSet, rowNumber) -> new ScoredMemory(
+        MEMORY_ROW_MAPPER.mapRow(resultSet, rowNumber),
+        resultSet.getDouble("similarity")
     );
 
     private final JdbcTemplate jdbcTemplate;
@@ -121,6 +128,57 @@ public class MemoryRepository {
             MEMORY_ROW_MAPPER,
             id
         ).stream().findFirst();
+    }
+
+    public List<ScoredMemory> semanticSearch(float[] queryEmbedding, Long projectId, boolean includeGlobal, int limit) {
+        String sql = """
+                WITH search_query AS (
+                    SELECT CAST(? AS vector) AS embedding
+                )
+                SELECT
+                    m.id,
+                    m.project_id,
+                    m.source_id,
+                    m.scope,
+                    m.memory_type,
+                    m.title,
+                    m.content,
+                    m.confidence,
+                    m.status,
+                    m.evidence,
+                    m.superseded_by,
+                    m.created_at,
+                    m.updated_at,
+                    1 - (
+                        m.embedding <=> search_query.embedding
+                    ) AS similarity
+                FROM memories m
+                CROSS JOIN search_query
+                WHERE m.status = 'active'
+                    AND m.embedding IS NOT NULL
+                    AND (
+                        (
+                            m.project_id = ?
+                            AND m.scope IN ('project', 'session')
+                        )
+                        OR (
+                            ?
+                            AND m.scope = 'global'
+                        )
+                    )
+                ORDER_BY
+                    m.embedding <=> search_query.embedding
+                LIMIT ?
+                """;
+
+        return jdbcTemplate.query(
+            sql,
+            SCORED_MEMORY_ROW_MAPPER,
+            toVectorLiteral(queryEmbedding),
+            projectId,
+            includeGlobal,
+            limit
+        );
     }
 
     private static String toVectorLiteral(float[] embedding) {
