@@ -1,6 +1,8 @@
 package dev.joe.aimemoryservice;
 
 import dev.joe.aimemoryservice.dto.MemoryResponse;
+import dev.joe.aimemoryservice.dto.MemorySearchResult;
+import dev.joe.aimemoryservice.dto.SearchMemoryRequest;
 import dev.joe.aimemoryservice.dto.StoreMemoryRequest;
 import dev.joe.aimemoryservice.controller.MemoryController;
 import dev.joe.aimemoryservice.domain.enums.Confidence;
@@ -22,6 +24,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -149,6 +152,82 @@ class MemoryControllerTest {
                                             .value("Resource not found"))
                             .andExpect(jsonPath("$.detail")
                                             .value("Memory with ID 99 was not found"))
+                            .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void searchesMemories() throws Exception {
+            MemorySearchResult result = new MemorySearchResult(
+                            1L,
+                            1L,
+                            null,
+                            MemoryScope.PROJECT,
+                            MemoryType.FAILURE,
+                            "Large context caused model slowdown",
+                            "Large contexts increased CPU usage.",
+                            Confidence.HIGH,
+                            "Smaller contexts remained responsive.",
+                            0.7594);
+
+            when(memorySearchService.searchMemories(
+                            any(SearchMemoryRequest.class))).thenReturn(List.of(result));
+
+            mockMvc.perform(post("/api/memories/search")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                            {
+                                              "query": "Why did long sessions become slow?",
+                                              "projectId": 1,
+                                              "includeGlobal": true,
+                                              "limit": 5
+                                            }
+                                            """))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$[0].id").value(1))
+                            .andExpect(jsonPath("$[0].scope").value("PROJECT"))
+                            .andExpect(jsonPath("$[0].memoryType").value("FAILURE"))
+                            .andExpect(jsonPath("$[0].title")
+                                            .value("Large context caused model slowdown"))
+                            .andExpect(jsonPath("$[0].similarity").value(0.7594));
+    }
+
+    @Test
+    void rejectsBlankSearchQuery() throws Exception {
+            mockMvc.perform(post("/api/memories/search")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                            {
+                                              "query": "   ",
+                                              "projectId": 1
+                                            }
+                                            """))
+                            .andExpect(status().isBadRequest())
+                            .andExpect(jsonPath("$.title")
+                                            .value("Request validation failed"))
+                            .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void reportsMissingSearchProject() throws Exception {
+            when(memorySearchService.searchMemories(
+                            any(SearchMemoryRequest.class))).thenThrow(new ResourceNotFoundException(
+                                            "Project",
+                                            99L));
+
+            mockMvc.perform(post("/api/memories/search")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                            {
+                                              "query": "Search query",
+                                              "projectId": 99,
+                                              "includeGlobal": true
+                                            }
+                                            """))
+                            .andExpect(status().isNotFound())
+                            .andExpect(jsonPath("$.title")
+                                            .value("Resource not found"))
+                            .andExpect(jsonPath("$.detail")
+                                            .value("Project with ID 99 was not found"))
                             .andExpect(jsonPath("$.status").value(404));
     }
 
