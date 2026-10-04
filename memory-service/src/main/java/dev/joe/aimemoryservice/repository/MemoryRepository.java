@@ -99,7 +99,7 @@ public class MemoryRepository {
             throw new IllegalArgumentException("Embedding must not be null");
 
         if(embedding.length != EMBEDDING_DIMENSIONS)
-            throw new IllegalArgumentException("Expected an embedding with "+EMBEDDING_DIMENSIONS+" dimensions, but recieved: "+embedding.length);
+            throw new IllegalArgumentException("Expected an embedding with "+EMBEDDING_DIMENSIONS+" dimensions, but received: "+embedding.length);
         
         StringBuilder vector = new StringBuilder("[");
 
