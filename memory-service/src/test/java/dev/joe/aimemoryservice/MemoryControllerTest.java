@@ -11,6 +11,7 @@ import dev.joe.aimemoryservice.exceptions.GlobalExceptionHandler;
 import dev.joe.aimemoryservice.exceptions.InvalidMemoryRequestException;
 import dev.joe.aimemoryservice.exceptions.OllamaClientException;
 import dev.joe.aimemoryservice.exceptions.ResourceNotFoundException;
+import dev.joe.aimemoryservice.service.MemorySearchService;
 import dev.joe.aimemoryservice.service.MemoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,8 @@ class MemoryControllerTest {
 
     @MockitoBean
     private MemoryService memoryService;
+    @MockitoBean 
+    private MemorySearchService memorySearchService;
 
     @Test
     void createsMemory() throws Exception {
