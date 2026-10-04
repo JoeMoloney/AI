@@ -75,6 +75,13 @@ public class MemoryServiceImpl implements MemoryService {
         return toResponse(memory);
     }
 
+    @Override 
+    public MemoryResponse getMemory(long id) {
+        Memory memory = memoryRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Memory", id));
+        return toResponse(memory);
+    }
+
     private void validateRequiredValues(StoreMemoryRequest request) {
         if (request == null)
             throw new InvalidMemoryRequestException("Memory request must not be null");
