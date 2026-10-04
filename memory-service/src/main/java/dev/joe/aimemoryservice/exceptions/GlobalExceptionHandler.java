@@ -42,4 +42,43 @@ public class GlobalExceptionHandler {
                 .badRequest()
                 .body(problem);
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleResourceNotFound(ResourceNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.NOT_FOUND,
+            exception.getMessage()
+        );
+        problem.setTitle("Resource not found");
+
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(problem);
+    }
+
+    @ExceptionHandler(InvalidMemoryRequestException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidMemoryRequest(InvalidMemoryRequestException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            exception.getMessage()
+        );
+        problem.setTitle("Invalid memory request");
+
+        return ResponseEntity
+            .badRequest()
+            .body(problem);
+    }
+
+    @ExceptionHandler(OllamaClientException.class)
+    public ResponseEntity<ProblemDetail> handleOllamaFailure(OllamaClientException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_GATEWAY,
+            exception.getMessage()
+        );
+        problem.setTitle("Embedding service failure");
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_GATEWAY)
+            .body(problem);
+    }
 }
