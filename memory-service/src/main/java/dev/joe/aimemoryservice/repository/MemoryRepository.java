@@ -132,44 +132,44 @@ public class MemoryRepository {
 
     public List<ScoredMemory> semanticSearch(float[] queryEmbedding, Long projectId, boolean includeGlobal, int limit) {
         String sql = """
-                WITH search_query AS (
-                    SELECT CAST(? AS vector) AS embedding
-                )
-                SELECT
-                    m.id,
-                    m.project_id,
-                    m.source_id,
-                    m.scope,
-                    m.memory_type,
-                    m.title,
-                    m.content,
-                    m.confidence,
-                    m.status,
-                    m.evidence,
-                    m.superseded_by,
-                    m.created_at,
-                    m.updated_at,
-                    1 - (
-                        m.embedding <=> search_query.embedding
-                    ) AS similarity
-                FROM memories m
-                CROSS JOIN search_query
-                WHERE m.status = 'active'
-                    AND m.embedding IS NOT NULL
-                    AND (
-                        (
-                            m.project_id = ?
-                            AND m.scope IN ('project', 'session')
-                        )
-                        OR (
-                            ?
-                            AND m.scope = 'global'
-                        )
-                    )
-                ORDER_BY
+            WITH search_query AS (
+                SELECT CAST(? AS vector) AS embedding
+            )
+            SELECT
+                m.id,
+                m.project_id,
+                m.source_id,
+                m.scope,
+                m.memory_type,
+                m.title,
+                m.content,
+                m.confidence,
+                m.status,
+                m.evidence,
+                m.superseded_by,
+                m.created_at,
+                m.updated_at,
+                1 - (
                     m.embedding <=> search_query.embedding
-                LIMIT ?
-                """;
+                ) AS similarity
+            FROM memories m
+            CROSS JOIN search_query
+            WHERE m.status = 'active'
+              AND m.embedding IS NOT NULL
+              AND (
+                  (
+                      m.project_id = ?
+                      AND m.scope IN ('project', 'session')
+                  )
+                  OR (
+                      ?
+                      AND m.scope = 'global'
+                  )
+              )
+            ORDER BY
+                m.embedding <=> search_query.embedding
+            LIMIT ?
+            """;
 
         return jdbcTemplate.query(
             sql,
