@@ -1,5 +1,10 @@
 package dev.joe.aimemoryservice.service;
 
-public class MemorySearchService {
-    
+import java.util.List;
+
+import dev.joe.aimemoryservice.dto.MemorySearchResult;
+import dev.joe.aimemoryservice.dto.SearchMemoryRequest;
+
+public interface MemorySearchService {
+    List<MemorySearchResult> searchMemories(SearchMemoryRequest request);
 }
