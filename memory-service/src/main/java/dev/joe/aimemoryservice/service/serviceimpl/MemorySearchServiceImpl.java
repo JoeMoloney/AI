@@ -56,8 +56,10 @@ public class MemorySearchServiceImpl implements MemorySearchService {
     private static void validateRequest(SearchMemoryRequest request) {
         if(request == null)
             throw new InvalidMemoryRequestException("Search request must not be null");
-        if(request.query() == null)
+        if(request.query() == null || request.query().isBlank())
             throw new InvalidMemoryRequestException("Search query must not be blank");
+        if(request.limit() != null && (request.limit() < 1 || request.limit() > 20))
+            throw new InvalidMemoryRequestException("Search limit must be between 1 and 20");
     }
 
     private static void validateSearchScope(Long projectId, boolean includeGlobal) {
