@@ -181,6 +181,125 @@ public class MemoryRepository {
         );
     }
 
+    public Optional<Memory> updateActive(long id, MemoryType memoryType, String title, String content, Confidence confidence, String evidence, float[] replacementEmbedding) {
+        String sql = """
+            UPDATE memories
+            SET
+                memory_type = ?,
+                title = ?,
+                content = ?,
+                confidence = ?,
+                evidence = ?,
+                embedding = COALESCE(
+                    CAST(? AS vector),
+                    embedding
+                )
+            WHERE id = ?
+              AND status = 'active'
+            RETURNING
+                id,
+                project_id,
+                source_id,
+                scope,
+                memory_type,
+                title,
+                content,
+                confidence,
+                status,
+                evidence,
+                superseded_by,
+                created_at,
+                updated_at
+            """;
+
+        String vector = replacementEmbedding == null ? null : toVectorLiteral(replacementEmbedding);
+
+        return jdbcTemplate.query(
+            sql,
+            MEMORY_ROW_MAPPER,
+            memoryType.databaseValue(),
+            title,
+            content,
+            confidence.databaseValue(),
+            evidence,
+            vector,
+            id
+        ).stream().findFirst();
+    }
+
+    public Optional<Memory> transitionActiveStatus(long id, MemoryStatus newStatus, Long supersededBy) {
+        String sql = """
+            UPDATE memories
+            SET
+                status = ?,
+                superseded_by = ?
+            WHERE id = ?
+              AND status = 'active'
+            RETURNING
+                id,
+                project_id,
+                source_id,
+                scope,
+                memory_type,
+                title,
+                content,
+                confidence,
+                status,
+                evidence,
+                superseded_by,
+                created_at,
+                updated_at
+            """;
+        
+            return jdbcTemplate.query(
+                sql,
+                MEMORY_ROW_MAPPER,
+                newStatus.databaseValue(),
+                supersededBy,
+                id
+            ).stream().findFirst();
+    }
+
+    public List<Memory> supersede(long oldMemoryId, long replacementMemoryId) {
+        String sql = """
+            UPDATE memories
+            SET
+                status = CASE
+                    WHEN id = ? THEN 'superseded'
+                    ELSE 'active'
+                END,
+                superseded_by = CASE
+                    WHEN id = ? THEN ?
+                    ELSE NULL
+                END
+            WHERE id IN (?, ?)
+            RETURNING
+                id,
+                project_id,
+                source_id,
+                scope,
+                memory_type,
+                title,
+                content,
+                confidence,
+                status,
+                evidence,
+                superseded_by,
+                created_at,
+                updated_at
+            """;
+        
+        return jdbcTemplate.query(
+            sql,
+            MEMORY_ROW_MAPPER,
+            oldMemoryId,
+            oldMemoryId,
+            replacementMemoryId,
+            oldMemoryId,
+            replacementMemoryId
+        );
+    }
+
     private static String toVectorLiteral(float[] embedding) {
         if(embedding == null)
             throw new IllegalArgumentException("Embedding must not be null");
