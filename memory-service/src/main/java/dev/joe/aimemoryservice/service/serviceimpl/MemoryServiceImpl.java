@@ -12,6 +12,7 @@ import dev.joe.aimemoryservice.repository.MemoryRepository;
 import dev.joe.aimemoryservice.repository.ProjectRepository;
 import dev.joe.aimemoryservice.repository.SourceRepository;
 import dev.joe.aimemoryservice.service.EmbeddingService;
+import dev.joe.aimemoryservice.service.MemoryEmbeddingTextBuilder;
 import dev.joe.aimemoryservice.service.MemoryService;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +51,7 @@ public class MemoryServiceImpl implements MemoryService {
                 ? Confidence.MEDIUM
                 : request.confidence();
 
-        String embeddingText = buildEmbeddingText(
+        String embeddingText = MemoryEmbeddingTextBuilder.build(
                 title,
                 content,
                 evidence
@@ -134,19 +135,6 @@ public class MemoryServiceImpl implements MemoryService {
             return null;
 
         return value.trim();
-    }
-
-    private static String buildEmbeddingText(String title, String content, String evidence) {
-        StringBuilder text = new StringBuilder()
-                .append("Title: ")
-                .append(title)
-                .append("\n\nContent:\n")
-                .append(content);
-
-        if (evidence != null)
-            text.append("\n\nEvidence:\n").append(evidence);
-
-        return text.toString();
     }
 
     private static MemoryResponse toResponse(Memory memory) {
