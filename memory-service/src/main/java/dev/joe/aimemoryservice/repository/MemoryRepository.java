@@ -181,6 +181,163 @@ public class MemoryRepository {
         );
     }
 
+    public List<ScoredMemory> hybridSearch(
+        String query,
+        float[] queryEmbedding,
+        Long projectId,
+        boolean includeGlobal,
+        int limit
+    ) {
+        int candidateLimit = Math.max(20, limit * 4);
+        String sql = """
+            WITH params AS (
+                SELECT
+                    CAST(? AS vector) AS query_embedding,
+                    websearch_to_tsquery('english', ?) AS text_query
+            ),
+            vector_ranked AS (
+                SELECT
+                    m.id,
+                    1 - (m.embedding <=> p.query_embedding) AS similarity,
+                    ROW_NUMBER() OVER (
+                        ORDER BY m.embedding <=> p.query_embedding
+                    ) AS vector_rank
+                FROM memories m
+                CROSS JOIN params p
+                WHERE m.status = 'active'
+                  AND m.embedding IS NOT NULL
+                  AND (
+                      (m.project_id = ? AND m.scope IN ('project', 'session'))
+                      OR (? AND m.scope = 'global')
+                  )
+                ORDER BY m.embedding <=> p.query_embedding
+                LIMIT ?
+            ),
+            text_ranked AS (
+                SELECT
+                    m.id,
+                    ROW_NUMBER() OVER (
+                        ORDER BY ts_rank_cd(m.search_document, p.text_query) DESC
+                    ) AS text_rank
+                FROM memories m
+                CROSS JOIN params p
+                WHERE m.status = 'active'
+                  AND m.search_document @@ p.text_query
+                  AND (
+                      (m.project_id = ? AND m.scope IN ('project', 'session'))
+                      OR (? AND m.scope = 'global')
+                  )
+                ORDER BY ts_rank_cd(m.search_document, p.text_query) DESC
+                LIMIT ?
+            ),
+            ranked AS (
+                SELECT
+                    COALESCE(v.id, t.id) AS id,
+                    v.similarity,
+                    COALESCE(1.0 / (60 + v.vector_rank), 0.0)
+                        + COALESCE(1.0 / (60 + t.text_rank), 0.0) AS rrf_score
+                FROM vector_ranked v
+                FULL OUTER JOIN text_ranked t ON t.id = v.id
+            )
+            SELECT
+                m.id,
+                m.project_id,
+                m.source_id,
+                m.scope,
+                m.memory_type,
+                m.title,
+                m.content,
+                m.confidence,
+                m.status,
+                m.evidence,
+                m.superseded_by,
+                m.created_at,
+                m.updated_at,
+                COALESCE(
+                    r.similarity,
+                    1 - (m.embedding <=> p.query_embedding)
+                ) AS similarity
+            FROM ranked r
+            JOIN memories m ON m.id = r.id
+            CROSS JOIN params p
+            ORDER BY
+                r.rrf_score DESC,
+                CASE m.confidence
+                    WHEN 'confirmed' THEN 5
+                    WHEN 'high' THEN 4
+                    WHEN 'medium' THEN 3
+                    WHEN 'low' THEN 2
+                    ELSE 1
+                END DESC,
+                CASE WHEN m.project_id IS NOT DISTINCT FROM ? THEN 1 ELSE 0 END DESC,
+                m.id DESC
+            LIMIT ?
+            """;
+
+        return jdbcTemplate.query(
+            sql,
+            SCORED_MEMORY_ROW_MAPPER,
+            toVectorLiteral(queryEmbedding),
+            query,
+            projectId,
+            includeGlobal,
+            candidateLimit,
+            projectId,
+            includeGlobal,
+            candidateLimit,
+            projectId,
+            limit
+        );
+    }
+
+    public List<ScoredMemory> findDuplicateCandidates(
+        float[] embedding,
+        Long projectId,
+        MemoryScope scope,
+        double similarityThreshold,
+        int limit
+    ) {
+        String sql = """
+            WITH candidate AS (
+                SELECT CAST(? AS vector) AS embedding
+            )
+            SELECT
+                m.id,
+                m.project_id,
+                m.source_id,
+                m.scope,
+                m.memory_type,
+                m.title,
+                m.content,
+                m.confidence,
+                m.status,
+                m.evidence,
+                m.superseded_by,
+                m.created_at,
+                m.updated_at,
+                1 - (m.embedding <=> candidate.embedding) AS similarity
+            FROM memories m
+            CROSS JOIN candidate
+            WHERE m.status = 'active'
+              AND m.embedding IS NOT NULL
+              AND m.scope = ?
+              AND m.project_id IS NOT DISTINCT FROM ?
+              AND 1 - (m.embedding <=> candidate.embedding) >= ?
+            ORDER BY m.embedding <=> candidate.embedding, m.id DESC
+            LIMIT ?
+            """;
+
+        return jdbcTemplate.query(
+            sql,
+            SCORED_MEMORY_ROW_MAPPER,
+            toVectorLiteral(embedding),
+            scope.databaseValue(),
+            projectId,
+            similarityThreshold,
+            limit
+        );
+    }
+
     public Optional<Memory> updateActive(long id, MemoryType memoryType, String title, String content, Confidence confidence, String evidence, float[] replacementEmbedding) {
         String sql = """
             UPDATE memories

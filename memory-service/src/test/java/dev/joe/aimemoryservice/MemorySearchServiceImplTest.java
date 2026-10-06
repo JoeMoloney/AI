@@ -73,7 +73,8 @@ class MemorySearchServiceImplTest {
         when(embeddingService.embedQuery(
                 "Why did long sessions become slow?"
         )).thenReturn(embedding);
-        when(memoryRepository.semanticSearch(
+        when(memoryRepository.hybridSearch(
+                "Why did long sessions become slow?",
                 embedding,
                 1L,
                 true,
@@ -110,7 +111,8 @@ class MemorySearchServiceImplTest {
         when(embeddingService.embedQuery(
                 "Reusable troubleshooting lesson"
         )).thenReturn(embedding);
-        when(memoryRepository.semanticSearch(
+        when(memoryRepository.hybridSearch(
+                "Reusable troubleshooting lesson",
                 embedding,
                 null,
                 true,

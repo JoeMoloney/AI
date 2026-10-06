@@ -11,6 +11,8 @@ import dev.joe.aimemoryservice.domain.enums.MemoryScope;
 import dev.joe.aimemoryservice.domain.enums.MemoryStatus;
 import dev.joe.aimemoryservice.domain.enums.MemoryType;
 import dev.joe.aimemoryservice.exceptions.GlobalExceptionHandler;
+import dev.joe.aimemoryservice.exceptions.DuplicateMemoryException;
+import dev.joe.aimemoryservice.dto.DuplicateMemoryCandidate;
 import dev.joe.aimemoryservice.exceptions.InvalidMemoryRequestException;
 import dev.joe.aimemoryservice.exceptions.OllamaClientException;
 import dev.joe.aimemoryservice.exceptions.ResourceNotFoundException;
@@ -97,6 +99,22 @@ class MemoryControllerTest {
                                 .andExpect(jsonPath("$.title")
                                                 .value("Resource not found"))
                                 .andExpect(jsonPath("$.status").value(404));
+        }
+
+        @Test
+        void reportsLikelyDuplicate() throws Exception {
+                when(memoryService.createMemory(any(StoreMemoryRequest.class)))
+                                .thenThrow(new DuplicateMemoryException(List.of(
+                                                new DuplicateMemoryCandidate(7L, "Existing lesson", 0.98)
+                                )));
+
+                mockMvc.perform(post("/api/memories")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validRequest()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.title").value("Likely duplicate memory"))
+                                .andExpect(jsonPath("$.candidates[0].id").value(7))
+                                .andExpect(jsonPath("$.candidates[0].similarity").value(0.98));
         }
 
         @Test
