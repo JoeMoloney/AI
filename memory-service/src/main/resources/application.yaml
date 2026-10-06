@@ -1,6 +1,21 @@
 spring:
   application:
     name: ai-memory-service
+  ai:
+    mcp:
+      server:
+        name: ai-memory-service
+        version: 1.0.0
+        protocol: STREAMABLE
+        annotation-scanner:
+          enabled: false
+        capabilities:
+          resource: false
+          prompt: false
+          completion: false
+        tool-change-notification: false
+        streamable-http:
+          mcp-endpoint: /mcp
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ai_memory}
     username: ${DB_USER:ai_memory}
@@ -8,6 +23,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 management:
   endpoints:
@@ -19,3 +37,9 @@ ollama:
   base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
   embedding-model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
   timeout: ${OLLAMA_TIMEOUT:60s}
+
+memory:
+  deduplication:
+    enabled: ${MEMORY_DEDUPLICATION_ENABLED:true}
+    similarity-threshold: ${MEMORY_DUPLICATE_THRESHOLD:0.95}
+    candidate-limit: ${MEMORY_DUPLICATE_CANDIDATE_LIMIT:3}

@@ -13,6 +13,7 @@ import dev.joe.aimemoryservice.repository.ProjectRepository;
 import dev.joe.aimemoryservice.repository.SourceRepository;
 import dev.joe.aimemoryservice.service.EmbeddingService;
 import dev.joe.aimemoryservice.service.MemoryEmbeddingTextBuilder;
+import dev.joe.aimemoryservice.service.MemoryDeduplicationService;
 import dev.joe.aimemoryservice.service.MemoryService;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +24,20 @@ public class MemoryServiceImpl implements MemoryService {
     private final ProjectRepository projectRepository;
     private final SourceRepository sourceRepository;
     private final EmbeddingService embeddingService;
+    private final MemoryDeduplicationService deduplicationService;
 
     public MemoryServiceImpl(
             MemoryRepository memoryRepository,
             ProjectRepository projectRepository,
             SourceRepository sourceRepository,
-            EmbeddingService embeddingService
+            EmbeddingService embeddingService,
+            MemoryDeduplicationService deduplicationService
     ) {
         this.memoryRepository = memoryRepository;
         this.projectRepository = projectRepository;
         this.sourceRepository = sourceRepository;
         this.embeddingService = embeddingService;
+        this.deduplicationService = deduplicationService;
     }
 
     @Override
@@ -59,6 +63,12 @@ public class MemoryServiceImpl implements MemoryService {
 
         float[] embedding =
                 embeddingService.embedDocument(embeddingText);
+
+        deduplicationService.rejectLikelyDuplicates(
+                embedding,
+                request.projectId(),
+                request.scope()
+        );
 
         Memory memory = memoryRepository.insert(
                 request.projectId(),

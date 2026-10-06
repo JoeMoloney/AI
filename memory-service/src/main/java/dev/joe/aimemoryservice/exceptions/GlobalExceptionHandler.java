@@ -11,6 +11,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice 
 public class GlobalExceptionHandler {
+    @ExceptionHandler(DuplicateMemoryException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateMemory(DuplicateMemoryException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.CONFLICT,
+            exception.getMessage()
+        );
+        problem.setTitle("Likely duplicate memory");
+        problem.setProperty("candidates", exception.candidates());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
     @ExceptionHandler(ProjectAlreadyExistsException.class)
     public ResponseEntity<ProblemDetail> handleProjectAlreadyExists(ProjectAlreadyExistsException exception) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(

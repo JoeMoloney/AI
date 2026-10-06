@@ -47,7 +47,7 @@ public class MemorySearchServiceImpl implements MemorySearchService {
 
         float[] queryEmbedding = embeddingService.embedQuery(query);
 
-        return memoryRepository.semanticSearch(queryEmbedding, request.projectId(), includeGlobal, limit)
+        return memoryRepository.hybridSearch(query, queryEmbedding, request.projectId(), includeGlobal, limit)
             .stream()
             .map(MemorySearchServiceImpl::toResult)
             .toList();

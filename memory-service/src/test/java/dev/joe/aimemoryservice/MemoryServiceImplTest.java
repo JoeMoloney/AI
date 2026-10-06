@@ -14,6 +14,7 @@ import dev.joe.aimemoryservice.repository.MemoryRepository;
 import dev.joe.aimemoryservice.repository.ProjectRepository;
 import dev.joe.aimemoryservice.repository.SourceRepository;
 import dev.joe.aimemoryservice.service.EmbeddingService;
+import dev.joe.aimemoryservice.service.MemoryDeduplicationService;
 import dev.joe.aimemoryservice.service.serviceimpl.MemoryServiceImpl;
 
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ class MemoryServiceImplTest {
 
     @Mock
     private EmbeddingService embeddingService;
+
+    @Mock
+    private MemoryDeduplicationService deduplicationService;
 
     @InjectMocks
     private MemoryServiceImpl memoryService;
