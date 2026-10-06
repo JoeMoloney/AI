@@ -19,6 +19,7 @@ import dev.joe.aimemoryservice.service.EmbeddingService;
 import dev.joe.aimemoryservice.service.MemoryEmbeddingTextBuilder;
 import dev.joe.aimemoryservice.service.MemoryLifecycleService;
 
+/** Enforces active-only updates and one-way memory lifecycle transitions. */
 @Service 
 public class MemoryLifecycleServiceImpl implements MemoryLifecycleService {
 

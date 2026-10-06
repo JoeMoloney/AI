@@ -17,6 +17,12 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+/**
+ * Small MCP tool surface for AI clients.
+ *
+ * <p>Methods only translate tool arguments into existing DTOs and delegate to
+ * the same services used by REST; business rules must not be duplicated here.</p>
+ */
 @Component
 public class MemoryMcpTools {
     private final MemoryService memoryService;

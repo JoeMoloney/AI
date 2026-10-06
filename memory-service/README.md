@@ -3,6 +3,19 @@
 Local durable memory for AI coding tools, backed by PostgreSQL, pgvector, and
 Ollama `nomic-embed-text` embeddings.
 
+## Documentation
+
+- [Architecture and behavior](docs/ARCHITECTURE.md)
+- [REST API reference](docs/REST_API.md)
+- Generated Javadocs: run `./gradlew javadoc`, then open
+  `build/docs/javadoc/index.html`
+
+## Requirements
+
+- Java 21
+- PostgreSQL 17 with pgvector
+- Ollama with `nomic-embed-text`
+
 ## Run
 
 Start PostgreSQL from the repository root, then start the service:
@@ -56,4 +69,10 @@ MEMORY_DUPLICATE_CANDIDATE_LIMIT=3
 
 ```bash
 ./gradlew test --rerun-tasks
+```
+
+Generate the code-level API documentation with:
+
+```bash
+./gradlew javadoc
 ```

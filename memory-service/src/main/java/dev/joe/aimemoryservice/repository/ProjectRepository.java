@@ -8,7 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository 
+/** Performs Spring JDBC persistence and lookup operations for projects. */
+@Repository
 public class ProjectRepository {
 
     private static final RowMapper<Project> PROJECT_ROW_MAPPER = (resultSet, rowNumber) -> new Project(

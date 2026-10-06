@@ -52,6 +52,12 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.named('javadoc') {
+	// Keep link and HTML validation strict without requiring comments on every
+	// Spring-managed constructor, endpoint adapter, or enum constant.
+	options.addBooleanOption('Xdoclint:all,-missing', true)
+}
+
 test {
 	testLogging {
 		events "passed", "skipped", "failed"
