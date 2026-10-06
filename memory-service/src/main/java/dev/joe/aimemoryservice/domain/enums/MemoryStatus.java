@@ -2,6 +2,7 @@ package dev.joe.aimemoryservice.domain.enums;
 
 import java.util.Locale;
 
+/** One-way lifecycle state; only {@link #ACTIVE} memories are searchable. */
 public enum MemoryStatus {
     ACTIVE,
     SUPERSEDED,

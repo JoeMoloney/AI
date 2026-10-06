@@ -13,7 +13,8 @@ import dev.joe.aimemoryservice.exceptions.ProjectAlreadyExistsException;
 import dev.joe.aimemoryservice.repository.ProjectRepository;
 import dev.joe.aimemoryservice.service.ProjectService;
 
-@Service 
+/** Implements project normalization, uniqueness checks, and response mapping. */
+@Service
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;

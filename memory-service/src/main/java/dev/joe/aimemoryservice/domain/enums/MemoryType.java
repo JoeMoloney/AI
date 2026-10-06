@@ -2,6 +2,7 @@ package dev.joe.aimemoryservice.domain.enums;
 
 import java.util.Locale;
 
+/** Semantic category used by clients to describe the kind of knowledge stored. */
 public enum MemoryType {
     FACT,
     DISCOVERY,

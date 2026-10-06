@@ -3,7 +3,8 @@ package dev.joe.aimemoryservice.repository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-@Repository 
+/** Provides source existence and project-compatibility checks. */
+@Repository
 public class SourceRepository {
     private final JdbcTemplate jdbcTemplate;
 

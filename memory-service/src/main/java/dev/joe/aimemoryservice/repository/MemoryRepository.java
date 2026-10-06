@@ -14,6 +14,12 @@ import dev.joe.aimemoryservice.domain.enums.MemoryScope;
 import dev.joe.aimemoryservice.domain.enums.MemoryStatus;
 import dev.joe.aimemoryservice.domain.enums.MemoryType;
 
+/**
+ * Persists memories and implements PostgreSQL vector/full-text queries.
+ *
+ * <p>Embeddings are bound as pgvector literals and never mapped into the
+ * public {@link Memory} record.</p>
+ */
 @Repository
 public class MemoryRepository {
     private static final int EMBEDDING_DIMENSIONS = 768;
@@ -181,6 +187,17 @@ public class MemoryRepository {
         );
     }
 
+    /**
+     * Combines pgvector and full-text candidate ranks using reciprocal-rank
+     * fusion, then applies confidence and scope tie-breakers.
+     *
+     * @param query normalized text query
+     * @param queryEmbedding query embedding
+     * @param projectId project to search, or null for global-only search
+     * @param includeGlobal whether global memories are visible
+     * @param limit maximum results
+     * @return active memories in hybrid relevance order
+     */
     public List<ScoredMemory> hybridSearch(
         String query,
         float[] queryEmbedding,
@@ -290,6 +307,17 @@ public class MemoryRepository {
         );
     }
 
+    /**
+     * Finds active memories in the same exact scope whose cosine similarity
+     * meets the inclusive duplicate threshold.
+     *
+     * @param embedding proposed memory embedding
+     * @param projectId proposed project, or null for global scope
+     * @param scope proposed exact scope
+     * @param similarityThreshold inclusive similarity threshold
+     * @param limit maximum candidates
+     * @return likely duplicates ordered by vector distance
+     */
     public List<ScoredMemory> findDuplicateCandidates(
         float[] embedding,
         Long projectId,

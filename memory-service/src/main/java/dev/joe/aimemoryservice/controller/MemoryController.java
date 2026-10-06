@@ -22,6 +22,7 @@ import dev.joe.aimemoryservice.service.MemorySearchService;
 import dev.joe.aimemoryservice.service.MemoryService;
 import jakarta.validation.Valid;
 
+/** REST adapter for creation, retrieval, search, updates, and lifecycle transitions. */
 @RestController 
 @RequestMapping("/api/memories")
 public class MemoryController {

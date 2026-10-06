@@ -5,7 +5,8 @@ import org.springframework.stereotype.Service;
 import dev.joe.aimemoryservice.client.OllamaClient;
 import dev.joe.aimemoryservice.service.EmbeddingService;
 
-@Service 
+/** Applies nomic document/query prefixes before delegating to Ollama. */
+@Service
 public class EmbeddingServiceImpl implements EmbeddingService {
 
     private static final String DOCUMENT_PREFIX = "search_document: ";

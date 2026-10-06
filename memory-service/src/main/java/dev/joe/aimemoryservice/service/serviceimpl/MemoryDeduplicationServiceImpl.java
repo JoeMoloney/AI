@@ -8,6 +8,7 @@ import dev.joe.aimemoryservice.repository.MemoryRepository;
 import dev.joe.aimemoryservice.service.MemoryDeduplicationService;
 import org.springframework.stereotype.Service;
 
+/** Applies configurable cosine-similarity duplicate policy before insertion. */
 @Service
 public class MemoryDeduplicationServiceImpl implements MemoryDeduplicationService {
     private final MemoryRepository memoryRepository;

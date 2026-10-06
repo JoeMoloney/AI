@@ -15,6 +15,7 @@ import dev.joe.aimemoryservice.repository.ProjectRepository;
 import dev.joe.aimemoryservice.service.EmbeddingService;
 import dev.joe.aimemoryservice.service.MemorySearchService;
 
+/** Validates search visibility, embeds queries, and maps hybrid search results. */
 @Service 
 public class MemorySearchServiceImpl implements MemorySearchService {
     private static final int DEFAULT_LIMIT = 5;

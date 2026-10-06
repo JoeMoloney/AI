@@ -17,6 +17,7 @@ import dev.joe.aimemoryservice.service.MemoryDeduplicationService;
 import dev.joe.aimemoryservice.service.MemoryService;
 import org.springframework.stereotype.Service;
 
+/** Implements validated memory creation, duplicate checking, and retrieval. */
 @Service
 public class MemoryServiceImpl implements MemoryService {
 

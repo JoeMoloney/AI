@@ -2,6 +2,7 @@ package dev.joe.aimemoryservice.domain.enums;
 
 import java.util.Locale;
 
+/** Strength of evidence supporting a memory, from hypothesis to confirmed. */
 public enum Confidence {
     HYPOTHESIS,
     LOW,

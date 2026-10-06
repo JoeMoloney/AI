@@ -7,6 +7,12 @@ import dev.joe.aimemoryservice.domain.enums.MemoryScope;
 import dev.joe.aimemoryservice.domain.enums.MemoryStatus;
 import dev.joe.aimemoryservice.domain.enums.MemoryType;
 
+/**
+ * Persistence-facing memory projection.
+ *
+ * <p>The embedding is intentionally excluded so it cannot accidentally leak
+ * into transport responses.</p>
+ */
 public record Memory(
     long id,
     Long projectId,

@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/** Converts application and validation failures into consistent HTTP problems. */
 @RestControllerAdvice 
 public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateMemoryException.class)

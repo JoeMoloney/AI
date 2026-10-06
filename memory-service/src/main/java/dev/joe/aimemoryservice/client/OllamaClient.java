@@ -14,6 +14,13 @@ import org.springframework.web.client.RestClientResponseException;
 import dev.joe.aimemoryservice.config.OllamaProperties;
 import dev.joe.aimemoryservice.exceptions.OllamaClientException;
 
+/**
+ * Synchronous client for Ollama's embedding endpoint.
+ *
+ * <p>The client translates transport failures into
+ * {@link OllamaClientException} and enforces the service's fixed
+ * 768-dimensional vector contract.</p>
+ */
 @Component 
 public class OllamaClient {
     private static final int EXPECTED_EMBEDDING_DIMENSIONS = 768;
@@ -38,6 +45,14 @@ public class OllamaClient {
         this.embeddingModel = properties.embeddingModel();
     }
 
+    /**
+     * Requests one embedding from the configured Ollama model.
+     *
+     * @param text prefixed document or query text
+     * @return validated 768-dimensional embedding
+     * @throws IllegalArgumentException when text is blank
+     * @throws OllamaClientException when Ollama cannot provide a valid vector
+     */
     public float[] embed(String text) {
         if(text == null || text.isBlank())
             throw new IllegalArgumentException("Embedding text must not be blank");

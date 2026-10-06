@@ -15,6 +15,7 @@ import dev.joe.aimemoryservice.dto.ProjectResponse;
 import dev.joe.aimemoryservice.service.ProjectService;
 import jakarta.validation.Valid;
 
+/** REST adapter for creating and listing memory projects. */
 @RestController 
 @RequestMapping("/api/projects")
 public class ProjectController {
