@@ -28,10 +28,19 @@ A privacy-respecting metasearch engine that searches the web without tracking us
 ### ComfyUI
 A web UI for generating images from text.
 
-### Automatic1111
+### Memory DB
+Database for storing LLM-backed sematic memory for long term projects and usage
+
+### Memory Service
+REST API and MCP to allow local LLMs to read/write to Memory DB service
+
+### Ghidra MCP
+Allows local LLMs to use ghidra tools and services for decompilation projects and research like abandoned Xbox 360 games.
+
+### Automatic1111 (Deprecating because of ComfyUI - might remove later)
 A web UI for generating images from text.
 
-### SillyTavern
+### SillyTavern (WIP)
 A web UI for interacting with LLMs for generating images, personas, characters, stories etc.
 
 ## Getting Started
@@ -51,7 +60,30 @@ A web UI for interacting with LLMs for generating images, personas, characters, 
    - Open-WebUI: http://localhost:3000
    - SearXNG: http://localhost:8080
    - ComfyUI: http://localhost:8188  
-   - Automatic1111 Stable Diffusion: http://localhost:7860
+    - Automatic1111 Stable Diffusion: http://localhost:7860
+
+Published service ports bind to `127.0.0.1` for local access only. Containers
+still communicate over the shared Docker network. Existing containers must be
+recreated to apply port-binding changes.
+
+All Compose files use the external Docker network `selfhost_network`. The
+launcher creates it if needed. Before running Compose manually (from the root
+or an individual service folder), run `./create-docker-network.sh` from the
+repository root; it is safe to run repeatedly. Existing containers must be
+recreated to apply network changes. Manage each service through one Compose
+project, rather than starting the same service from both the root and its folder.
+
+### Configuration checks
+
+```bash
+bash tests/start-services-test.sh
+python tests/test_memory_credentials.py
+python tests/test_ghidra_runner.py
+```
+
+These check launcher behavior, memory-script credentials, and Ghidra target
+isolation using mocks/temporary fixtures. No
+containers are started or stopped, and no live database changes are made.
 
 ## WIP (Work In Progress)
 - Refine ComfyUI integration with Open-WebUI

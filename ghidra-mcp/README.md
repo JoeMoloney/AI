@@ -25,8 +25,8 @@ These restrictions apply to Ghidra, not an agent running on the host.
 Add the **container path**, not the host path, to `ghidra-mcp/.env`, for example:
 
 ```bash
-GHIDRA_BINARY=/data/fable2/default.xex
-GHIDRA_PROJECT_NAME=fable2
+GHIDRA_BINARY=/data/game_name/default.xex
+GHIDRA_PROJECT_NAME=game_name
 ```
 
 Only that file is imported; the runner does not scan `/data` recursively.
@@ -70,7 +70,7 @@ The runner and connection should first be tested against a small synthetic
 binary. For a real Xbox 360 target, call `get_program_info` and verify that its
 loader/architecture is Xenon/XEX, not a raw-binary fallback, before trusting
 decompilation results. The runner rejects `.xex` files imported with the wrong
-loader/language. Fable II's actual import must be verified separately.
+loader/language.
 
 Pure configuration tests (no containers needed):
 
