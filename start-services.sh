@@ -4,13 +4,14 @@
 #
 #   ollama is always started (it's the AI engine the rest plug into)
 #   memory-db is always started (postgres+pgvector — persistent LLM memory)
+#   memory-service is always started (durable LLM memory: REST /api + MCP /mcp)
 #
 # services:
 #   1) open-webui   chat UI + search & image tools   :3000
 #   2) searxng      search backend for open-webui    :8080
 #   3) comfyui      image generation (GPU)           :8188
 #   4) sillytavern  character / roleplay chat        :8000
-#   5) ghidra-mcp   Ghidra RE bridge (127.0.0.1)     :18081
+#   5) ghidra-mcp   headless Ghidra/MCP (127.0.0.1) :18081
 #
 # presets:
 #   chat     open-webui
@@ -22,11 +23,12 @@
 #   all      everything except ghidra-mcp
 #
 # input: numbers and/or presets, space- or comma-separated
-#   Enter  start ollama + memory-db (the always-on pair)
+#   Enter  start ollama + memory-db + memory-service (the always-on trio)
 #   q      quit, start nothing
 #   stop   stop all services in this project (docker compose down)
 #   logs   follow live logs of every service (docker compose logs -f)
 #   unknown token → the menu is shown again
+#   locally built services are rebuilt on startup (Docker's cache is reused)
 #
 # exit codes: 0 started/stopped · 1 quit / aborted / compose failure
 #
@@ -48,13 +50,14 @@ else
 fi
 
 # --- static data ------------------------------------------------------------
-# menu order; ghidra-mcp last — it's a niche dev bridge, not a daily service
+# menu order; ghidra-mcp last — it's a niche analysis service, not a daily service
 readonly SERVICES=( open-webui searxng comfyui sillytavern ghidra-mcp )
-declare -A PORT=( [ollama]=11434 [memory-db]=5432 [open-webui]=3000 [searxng]=8080 \
-                  [comfyui]=8188 [sillytavern]=8000 [ghidra-mcp]=18081 )
+declare -A PORT=( [ollama]=11434 [memory-db]=5432 [memory-service]=18082 \
+                  [open-webui]=3000 [searxng]=8080 [comfyui]=8188 \
+                  [sillytavern]=8000 [ghidra-mcp]=18081 )
 readonly -a ENV_FILES=( memory-db/.env memory-db/.pkey \
                         open-webui/.env open-webui/.apiKey searxng/.env \
-                        comfyui/.env sillytavern/.env )
+                        comfyui/.env sillytavern/.env ghidra-mcp/.env )
 
 # selection state — set by pick(), read in start_selected()
 declare -A ON=( [open-webui]=0 [searxng]=0 [comfyui]=0 \
@@ -84,13 +87,13 @@ load_env() {
 # --- menu --------------------------------------------------------------------
 draw() {
   local -a L=() line
-  L+=("${B}  AI services — pick what to start${E}  ${D}· ollama + memory-db always on · http://localhost:${PORT[ollama]}${E}")
+  L+=("${B}  AI services — pick what to start${E}  ${D}· ollama + memory-db + memory-service always on · http://localhost:${PORT[ollama]}${E}")
   L+=("")
   L+=("  ${D}    1)${E}  ${B}open-webui${E}   ${C}http://localhost:3000${E}  ${D}chat UI + search & image tools${E}")
   L+=("  ${D}    2)${E}  ${B}searxng${E}      ${C}http://localhost:8080${E}  ${D}search backend for open-webui${E}")
   L+=("  ${D}    3)${E}  ${B}comfyui${E}      ${C}http://localhost:8188${E}  ${D}image generation (GPU)${E}")
   L+=("  ${D}    4)${E}  ${B}sillytavern${E}  ${C}http://localhost:8000${E}  ${D}character / roleplay chat${E}")
-  L+=("  ${D}    5)${E}  ${B}ghidra-mcp${E}   ${C}http://127.0.0.1:18081${E} ${D}Ghidra RE/SSE-MCP bridge${E}")
+  L+=("  ${D}    5)${E}  ${B}ghidra-mcp${E}   ${C}http://127.0.0.1:18081/mcp${E} ${D}headless Ghidra/MCP analysis${E}")
   L+=("")
   L+=("  ${B}presets:${E}")
   L+=("    ${D}chat${E}     open-webui")
@@ -103,7 +106,7 @@ draw() {
   for line in "${L[@]}"; do
     printf '%s\n' "$line"
   done
-  printf '  %stype numbers and/or presets (space or comma) · Enter = ollama + memory-db · stop = stop all · logs = tail all · q = quit%s\n' "$D" "$E"
+  printf '  %stype numbers and/or presets (space or comma) · Enter = ollama + memory-db + memory-service · stop = stop all · logs = tail all · q = quit%s\n' "$D" "$E"
   printf '  > '
 }
 
@@ -114,9 +117,11 @@ pick() {
 
 # menu() exit codes: 0 started · 10 quit · 11 compose failed · 1 aborted(EOF)
 menu() {
-  local line bad tok
+  local line bad tok svc
   local -a toks=()
   while :; do
+    # A rejected line must not leave selections behind for the next attempt.
+    for svc in "${SERVICES[@]}"; do ON[$svc]=0; done
     draw
     IFS= read -r line || return 1          # EOF (Ctrl-D)
     line=${line//,/ }
@@ -173,7 +178,9 @@ preflight() {
 
 # --- start -------------------------------------------------------------------
 start_selected() {
-  local -a targets=( ollama memory-db ) pull_targets=( ollama memory-db )
+  # memory-service is build-based (like ghidra-mcp) → started, but not pulled
+  local -a targets=( ollama memory-db memory-service )
+  local -a pull_targets=( ollama memory-db )
   local svc
 
   for svc in "${SERVICES[@]}"; do
@@ -188,12 +195,22 @@ start_selected() {
 
   load_env
 
+  if [[ ${ON[ghidra-mcp]} -eq 1 && -z ${GHIDRA_BINARY:-} ]]; then
+    printf '  ! set GHIDRA_BINARY in ghidra-mcp/.env to a file under /data first\n' >&2
+    return 11
+  fi
+
+  if ! ./create-docker-network.sh; then
+    printf '  ! failed to prepare selfhost_network\n' >&2
+    return 11
+  fi
+
   if ! "${COMPOSE[@]}" pull "${pull_targets[@]}"; then
     printf '  ! failed: %s pull\n' "${COMPOSE[*]}" >&2
     return 11
   fi
-  if ! "${COMPOSE[@]}" up -d --force-recreate "${targets[@]}"; then
-    printf '  ! failed: %s up -d --force-recreate\n' "${COMPOSE[*]}" >&2
+  if ! "${COMPOSE[@]}" up -d --build --force-recreate "${targets[@]}"; then
+    printf '  ! failed: %s up -d --build --force-recreate\n' "${COMPOSE[*]}" >&2
     return 11
   fi
 
@@ -203,10 +220,13 @@ start_selected() {
     if [[ $svc == memory-db ]]; then
       printf '    %-12s localhost:%s   %spostgres+pgvector (LLM memory) — no web UI%s\n' \
              "$svc" "${PORT[$svc]}" "$D" "$E"
-    elif [[ $svc == ghidra-mcp ]]; then
-      printf '    %-12s http://127.0.0.1:%s   %sSSE/MCP endpoint — not a web page%s\n' \
+    elif [[ $svc == memory-service ]]; then
+      printf '    %-12s http://127.0.0.1:%s   %sREST /api + MCP /mcp — durable LLM memory, not a web page%s\n' \
              "$svc" "${PORT[$svc]}" "$D" "$E"
-      printf '  %s    note: needs the Ghidra server running on port 18080 (host)%s\n' "$D" "$E"
+    elif [[ $svc == ghidra-mcp ]]; then
+      printf '    %-12s http://127.0.0.1:%s/mcp   %sheadless MCP endpoint — not a web page%s\n' \
+              "$svc" "${PORT[$svc]}" "$D" "$E"
+      printf '  %s    note: initial analysis may take time; check container health before using tools%s\n' "$D" "$E"
     else
       printf '    %-12s http://localhost:%s\n' "$svc" "${PORT[$svc]}"
     fi
@@ -223,7 +243,7 @@ stop_all() {
   # down parses the same compose file as up, so it needs the same env vars for
   # the ${VAR}:/path volume specs to expand
   load_env
-  printf '\nstopping: all services in this project (ollama memory-db open-webui searxng comfyui sillytavern ghidra-mcp)\n\n'
+  printf '\nstopping: all services in this project (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp)\n\n'
   if ! "${COMPOSE[@]}" down; then
     printf '  ! failed: %s down\n' "${COMPOSE[*]}" >&2
     return 11
@@ -240,7 +260,7 @@ show_logs() {
   # `docker compose up` (without -d) gives us. compose still parses the
   # ${VAR}:/path volume specs, so source env first (same reason stop does).
   load_env
-  printf '\nlogs: all services (ollama memory-db open-webui searxng comfyui sillytavern ghidra-mcp)\n'
+  printf '\nlogs: all services (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp)\n'
   printf '  (Ctrl-C to stop following)\n\n'
   "${COMPOSE[@]}" logs -f
   return $?
@@ -271,4 +291,6 @@ main() {
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-main "$@"
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  main "$@"
+fi
