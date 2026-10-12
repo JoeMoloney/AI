@@ -1,6 +1,5 @@
 services:
   sillytavern:
-    build: ..
     container_name: sillytavern
     restart: unless-stopped
     hostname: sillytavern
@@ -10,7 +9,7 @@ services:
       - FORCE_COLOR=1
       - SILLYTAVERN_HEARTBEATINTERVAL=30
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ${SILLYTAVERN_DATA}/config:/home/node/app/config
       - ${SILLYTAVERN_DATA}/data:/home/node/app/data
