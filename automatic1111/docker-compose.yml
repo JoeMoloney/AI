@@ -4,7 +4,7 @@ services:
     container_name: automatic1111
     restart: always
     ports:
-      - "7860:7860"
+      - "127.0.0.1:7860:7860"
     networks: 
       - selfhost_network
     deploy:
@@ -26,4 +26,4 @@ services:
     command: -f --api --listen
 networks:
   selfhost_network:
-    driver: bridge
+    external: true
