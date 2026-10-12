@@ -1,0 +1,24 @@
+services:
+  memory-service:
+    build:
+      context: .
+    image: memory-service:local
+    container_name: memory-service
+    restart: unless-stopped
+    # env: application.yaml already exposes overrides; the container reaches
+    # its dependencies by service name on the shared selfhost_network
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      DB_URL: jdbc:postgresql://memory-db:5432/ai_memory
+      DB_USER: ai_memory
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD from memory-db/.pkey}
+      OLLAMA_BASE_URL: http://ollama:11434
+    ports:
+      # 18082: avoids the searxng 8080 clash; 180xx band next to ghidra-mcp
+      - "127.0.0.1:18082:8080"
+    networks:
+      - selfhost_network
+
+networks:
+  selfhost_network:
+    external: true
