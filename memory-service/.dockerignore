@@ -1,0 +1,10 @@
+.git/
+.gradle/
+build/
+bin/
+docs/
+.idea/
+*.iml
+.env
+.apiKey
+.pkey
