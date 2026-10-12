@@ -17,6 +17,15 @@ services:
       service: memory-db
     networks: 
       - selfhost_network
+  memory-service:
+    extends:
+      file: ./memory-service/docker-compose.yml
+      service: memory-service
+    depends_on:
+      memory-db:
+        condition: service_healthy
+    networks:
+      - selfhost_network
   searxng:
     extends:
       file: ./searxng/docker-compose.yml
@@ -47,4 +56,5 @@ services:
 
 networks:
   selfhost_network:
-    driver: bridge
+    name: selfhost_network
+    external: true
