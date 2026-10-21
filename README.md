@@ -82,6 +82,9 @@ Local Qwen's brief/analysis router and overrides are documented in
 [the router guide](.opencode/plugins/re-mode/README.md). It is scoped to this
 workspace and does not change cloud-model behaviour or run game analysis.
 
+[Bounded local RE batches](.opencode/workflows/README.md) use a small coordinator,
+fresh read-only workers, project-3 memories, and an ignored progress ledger.
+
 ```bash
 bash tests/start-services-test.sh
 python tests/test_memory_credentials.py

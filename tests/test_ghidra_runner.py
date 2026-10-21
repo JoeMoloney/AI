@@ -38,6 +38,15 @@ class TargetTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Set GHIDRA_BINARY"):
             runner.prepare_target({}, self.data, self.projects)
 
+    def test_pinning_generated_name_reuses_existing_project(self):
+        original = self.prepare()
+        manifest = self.projects / f"{original[1]}.target.json"
+        before = manifest.read_bytes()
+        pinned = self.prepare(GHIDRA_PROJECT_NAME=original[1])
+        self.assertEqual(pinned, original)
+        self.assertEqual(manifest.read_bytes(), before)
+        self.assertEqual(list(self.projects.glob("*.target.json")), [manifest])
+
     def test_outside_target_and_symlink_escape_are_rejected(self):
         outside = self.root / "outside.bin"
         outside.write_bytes(b"outside")

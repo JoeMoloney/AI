@@ -5,3 +5,4 @@ __pycache__/
 **/.apiKey
 **/.pkey
 .opencode/node_modules/
+.re-work/
