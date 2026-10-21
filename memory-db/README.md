@@ -9,34 +9,23 @@ LLM-backed semantic memory. It is a service on the shared selfhost stack
 - Embeddings: produced by Ollama's `nomic-embed-text` (768-dim), stored in the
   `embedding vector(768)` column with an HNSW cosine index.
 
-## Passwords you must set (do this first)
+## Password setup
 
-The password is **not shipped** in this repo. It appears in exactly three
-places, and all three **must contain the same value**.
+Create a gitignored `.pkey` beside `.env` containing a shell-quoted value:
 
-| # | File | What to change | Shipped in repo? |
-|---|------|----------------|------------------|
-| 1 | `.env` → (next to it) `.pkey` | Create a file named `.pkey` (gitignored) containing `POSTGRES_PASSWORD=<your_password>` | No — **you create it** |
-| 2 | `embed-memories.py` | Line `password=YOUR_PASSWORD` (in `DB_DSN`) → your password | Yes — replace the placeholder |
-| 3 | `search_memory.py` | Line `password=YOUR_PASSWORD` (in `DB_DSN`) → your password | Yes — replace the placeholder |
+```bash
+POSTGRES_PASSWORD='your_password_here'
+```
 
-`.env` is tracked and holds only the **non-secret** config (`POSTGRES_DATA`,
-`POSTGRES_DB`, `POSTGRES_USER`). The password deliberately lives in the separate
-`.pkey` file, which `.gitignore` excludes — so it never enters the repo.
+Restrict it with `chmod 600 .pkey`. Keep credentials out of tracked files.
+`.env` holds only non-secret config (`POSTGRES_DATA`, `POSTGRES_DB`,
+`POSTGRES_USER`).
 
-**Why all three must match:**
-
-- `docker-compose.yml` injects `POSTGRES_PASSWORD` into the Postgres container
-  from the environment. The parent `start-services.sh` loads `.pkey` into the
-  environment (`source .pkey`) before calling `docker compose`, so **`.pkey` is
-  the source of truth** that provisions the database.
-- The two Python scripts do **not** read `.pkey`; they hard-code the credential
-  in their `DB_DSN` string. They connect to the running database and will fail
-  to authenticate unless that value equals the one from `.pkey`.
-
-So: pick one password, put it in `.pkey`, and replace `YOUR_PASSWORD` in both
-`embed-memories.py` and `search_memory.py` with that same value. If you change
-it later, update all three to stay in sync.
+The root launcher exports `.pkey` for both PostgreSQL and the memory service.
+The Python scripts read `POSTGRES_PASSWORD` from their environment and stop
+with a clear error if it is missing or empty. Do not edit credentials into them.
+Changing `.pkey` does not rotate the password in an existing PostgreSQL data
+directory; coordinate any database password change separately.
 
 ## Other things to set
 
@@ -47,13 +36,21 @@ it later, update all three to stay in sync.
 
 ## Running the scripts
 
-The Python scripts need the `psycopg` driver. A local virtualenv (`.venv`,
-gitignored) is the intended interpreter, so run them as:
+The Python scripts need the `psycopg` driver. From this directory, export the
+configuration before running them with the local virtualenv (`.venv`):
 
-```
+```bash
+set -a
+source ./.env
+source ./.pkey
+set +a
 ./.venv/bin/python embed-memories.py
-./.venv/bin/python search_memory.py "<query text>"
+./.venv/bin/python search_memory.py
 ```
+
+Both scripts also accept `POSTGRES_HOST` and `POSTGRES_PORT` (defaults:
+`127.0.0.1` and `5432`). `search_memory.py` currently uses its hardcoded sample
+query; command-line query arguments are not implemented.
 
 If you don't have `.venv`, create it and install the driver, e.g.
 `python -m venv .venv && ./.venv/bin/pip install "psycopg[binary]"`.

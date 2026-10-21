@@ -1,17 +1,23 @@
 import json
+import os
 import urllib.request
 import psycopg
 
 OLLAMA_URL = "http://localhost:11434/api/embed"
 OLLAMA_MODEL = "nomic-embed-text"
 
-DB_DSN = (
-    "dbname=ai_memory "
-    "user=ai_memory "
-    "password=YOUR_PASSWORD "
-    "host=127.0.0.1 "
-    "port=5432"
-)
+DB_CONFIG = {
+    "dbname": os.getenv("POSTGRES_DB", "ai_memory"),
+    "user": os.getenv("POSTGRES_USER", "ai_memory"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
+    "host": os.getenv("POSTGRES_HOST", "127.0.0.1"),
+    "port": os.getenv("POSTGRES_PORT", "5432"),
+}
+
+if not DB_CONFIG["password"]:
+    raise SystemExit(
+        "POSTGRES_PASSWORD is required; export it from your local .pkey file."
+    )
 
 
 def get_query_embedding(text: str) -> list[float]:
@@ -41,7 +47,7 @@ vector_string = "[" + ",".join(
     str(value) for value in embedding
 ) + "]"
 
-with psycopg.connect(DB_DSN) as conn:
+with psycopg.connect(**DB_CONFIG) as conn:
     with conn.cursor() as cur:
         cur.execute(
             """
