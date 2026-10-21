@@ -17,7 +17,10 @@ services:
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?Set WEBUI_SECRET_KEY from open-webui/.apiKey}
       FILE_IMAGE_COMPRESSION_WIDTH: "1024"
       FILE_IMAGE_COMPRESSION_HEIGHT: "1024"
-    ports: [ "127.0.0.1:3000:8080" ]
+    ports:
+      - "127.0.0.1:3000:8080"
+      # Trusted LAN access for phones; update if this host's Wi-Fi IP changes.
+      - "192.168.1.50:3000:8080"
     volumes:
       - ${OPENWEBUI_DATA}:/app/backend/data
       - ${COMFYUI_WORKFLOWS}:/comfyui_workflows

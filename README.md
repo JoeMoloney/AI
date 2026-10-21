@@ -54,15 +54,18 @@ A web UI for interacting with LLMs for generating images, personas, characters, 
 
 2. Configure environment variables (if needed) via the .env files
 
-3. Start all services using .start-services.sh
+3. Start selected services using `./start-services.sh`. The `studio` preset starts
+   Open WebUI, SearXNG, and ComfyUI alongside the always-on services.
 
 4. Access the services:
    - Open-WebUI: http://localhost:3000
    - SearXNG: http://localhost:8080
-   - ComfyUI: http://localhost:8188  
-    - Automatic1111 Stable Diffusion: http://localhost:7860
+   - ComfyUI: http://localhost:8188
+   - Automatic1111 Stable Diffusion: http://localhost:7860
 
-Published service ports bind to `127.0.0.1` for local access only. Containers
+Published backend ports bind to `127.0.0.1` for local access only. Open WebUI
+additionally binds to `192.168.1.50:3000` for authenticated access from trusted
+LAN devices; see [WebUI access notes](open-webui/README.md#access). Containers
 still communicate over the shared Docker network. Existing containers must be
 recreated to apply port-binding changes.
 
