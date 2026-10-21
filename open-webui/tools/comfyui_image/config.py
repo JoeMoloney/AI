@@ -41,6 +41,12 @@ MODEL_WORKFLOWS = {
 "edit": "image_flux2_klein_image_edit_9b_base.json",
 "reference_edit": "image_flux2_klein_image_edit_9b_base_multi.json",
 },
+"bonsai-2:27b": {
+"name": "bonsai-2:27b",
+"generate": "image_flux2_text_to_image_9b.json",
+"edit": "image_flux2_klein_image_edit_9b_base.json",
+"reference_edit": "image_flux2_klein_image_edit_9b_base_multi.json",
+},
 "qwen3-vl:30b-a3b-instruct_Chroma": {
 "name": "qwen3-vl:30b-a3b-instruct_Chroma",
 "generate": "image_chroma_text_to_image.json"
