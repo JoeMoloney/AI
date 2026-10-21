@@ -95,6 +95,11 @@ These check launcher behavior, memory-script credentials, and Ghidra target
 isolation using mocks/temporary fixtures. No
 containers are started or stopped, and no live database changes are made.
 
+## Git workflow
+
+See [the Git workflow guide](docs/git-workflow.md) for feature branches,
+focused commits, partial staging, and pushing to the configured remotes.
+
 ## WIP (Work In Progress)
 - Refine ComfyUI integration with Open-WebUI
 - Hook up Automatic1111 to Open-WebUI
