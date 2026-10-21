@@ -13,6 +13,14 @@ LAN binding in `docker-compose.yml` must be updated if the host IP changes
 internet. Plain HTTP is not encrypted; use a trusted network or add HTTPS/VPN
 before using it on an untrusted network.
 
+## Ollama runtime settings
+
+The Compose configuration requests a 131072-token default context and one
+parallel inference slot (`OLLAMA_NUM_PARALLEL=1`). Large contexts can use
+substantial VRAM; lower `OLLAMA_CONTEXT_LENGTH` if a model exceeds your GPU's
+capacity. These defaults do not override a client's explicit context settings;
+OpenCode's local Qwen profile separately advertises a 32768-token context.
+
 ## Pre-requisites
 Standard Docker installation on Linux Mint
 + installed & enabled nvidia container toolkit

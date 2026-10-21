@@ -13,6 +13,8 @@ services:
       WEB_SEARCH_CONCURRENT_REQUESTS: "5"
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
       COMFYUI_IMAGE_TOOL_DIR: /custom_tools/comfyui_image
+      ENABLE_FUNCTIONS: "True"
+      ENABLE_PLUGINS: "True"
       # Persistent signing secret from .apiKey, not an Open WebUI API token.
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?Set WEBUI_SECRET_KEY from open-webui/.apiKey}
       FILE_IMAGE_COMPRESSION_WIDTH: "1024"
@@ -34,7 +36,8 @@ services:
     restart: unless-stopped
     environment:
       - OLLAMA_KEEP_ALIVE=0
-      - OLLAMA_CONTEXT_LENGTH=32768
+      - OLLAMA_CONTEXT_LENGTH=131072
+      - OLLAMA_NUM_PARALLEL=1
     deploy:
       resources:
         reservations:
