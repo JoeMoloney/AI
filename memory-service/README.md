@@ -21,6 +21,11 @@ Ollama `nomic-embed-text` embeddings.
 Start PostgreSQL from the repository root, then start the service:
 
 ```bash
+./create-docker-network.sh
+set -a
+source memory-db/.env
+source memory-db/.pkey
+set +a
 docker compose -f memory-db/docker-compose.yml up -d
 cd memory-service
 set -a
@@ -34,12 +39,54 @@ HTTP MCP endpoint is `http://127.0.0.1:8080/mcp`. Both bind to localhost by
 default. Set `SERVER_ADDRESS` only when intentionally exposing the service
 through an appropriate security boundary.
 
-The root `opencode.json` registers the MCP server with OpenCode. Restart
-OpenCode after starting the service, then verify the connection with:
+The root `opencode.json` targets the Docker deployment at port `18082`. If using
+`bootRun` instead, set its memory MCP URL to `http://127.0.0.1:8080/mcp` locally.
+After starting the service, verify the connection with:
 
 ```bash
 opencode mcp list
 ```
+
+## Run (Docker)
+
+`memory-service` is part of the always-on trio at the repository root
+(`ollama` + `memory-db` + `memory-service`). Start the whole stack with:
+
+```bash
+./start-services.sh   # Enter = start the always-on trio
+```
+
+Or start it manually from the repository root. Note: root-level `docker
+compose` commands parse the **entire** compose file, so every env file
+listed in `start-services.sh`'s `ENV_FILES` must be sourced first (the same
+way its `load_env` does), not just `memory-db`'s:
+
+```bash
+./create-docker-network.sh
+set -a
+for f in memory-db/.env memory-db/.pkey open-webui/.env open-webui/.apiKey \
+         searxng/.env comfyui/.env sillytavern/.env ghidra-mcp/.env; do
+  source "$f"
+done
+set +a
+docker compose up -d --build memory-service
+```
+
+Standalone from this directory (still needs `memory-db` and `ollama` on
+`selfhost_network`):
+
+```bash
+../create-docker-network.sh
+set -a
+source ../memory-db/.pkey
+set +a
+docker compose up -d --build
+```
+
+From the host, the containerized REST API is at `http://127.0.0.1:18082/api` and the
+Streamable HTTP MCP endpoint is `http://127.0.0.1:18082/mcp`, bound to
+localhost only. Readiness probe:
+`http://127.0.0.1:18082/actuator/health`.
 
 ## MCP tools
 

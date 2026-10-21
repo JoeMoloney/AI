@@ -4,7 +4,14 @@
     "servers": {
       "memory": {
         "type": "remote",
-        "url": "http://127.0.0.1:8080/mcp"
+        "url": "http://127.0.0.1:18082/mcp"
+      },
+      "ghidra": {
+        "type": "remote",
+        "url": "http://127.0.0.1:18081/mcp",
+        "timeout": {
+          "execution": 180000
+        }
       }
     }
   }
