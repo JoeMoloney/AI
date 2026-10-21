@@ -78,6 +78,10 @@ project, rather than starting the same service from both the root and its folder
 
 ### Configuration checks
 
+Local Qwen's brief/analysis router and overrides are documented in
+[the router guide](.opencode/plugins/re-mode/README.md). It is scoped to this
+workspace and does not change cloud-model behaviour or run game analysis.
+
 ```bash
 bash tests/start-services-test.sh
 python tests/test_memory_credentials.py

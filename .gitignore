@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 **/.apiKey
 **/.pkey
+.opencode/node_modules/

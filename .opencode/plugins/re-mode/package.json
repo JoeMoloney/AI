@@ -1,0 +1,6 @@
+{
+  "name": "local-re-mode",
+  "private": true,
+  "type": "module",
+  "main": "index.ts"
+}
