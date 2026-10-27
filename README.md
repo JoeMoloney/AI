@@ -11,7 +11,7 @@ This setup allows you to run multiple AI services locally on your hardware, givi
 
 **Check through the subfolders for each individual service**
 
-**I am a qualified software engineer, I refuse to accept vibecoding as the way forward for this industry, however some AI was used in the advancements of this project in order to save on time and scratch the excitement of POC'ing new features. **
+** I am a qualified software engineer, I refuse to accept vibecoding as the way forward for this industry, however some AI was used in the advancements of this project in order to save on time and scratch the excitement of POC'ing new features. **
 
 ## Current Services
 
@@ -128,16 +128,26 @@ Albeit VRAM limitations and context limitations and model-weight/effectiveness i
 + + Yes the MHz don't match the cpu baseline, I was in a rush right before covid and the great chip shortage of 2020 kicked in
 
 ## Inspiration / Sources / Guides: 
-- Open-WebUI Service: https://github.com/open-webui/open-webui
-- Automatic1111 Stable Diffusion Service: https://github.com/AUTOMATIC1111/stable-diffusion-webui
-- SearXNG Service: https://docs.searxng.org/admin/installation-searxng.html
-- PewDiePie: https://github.com/pewdiepie-archdaemon
-- OpenCode: https://opencode.ai/docs/
-- - A codex-like CLI interface for conversing and working alongside an LLM. Works nicely with the local ollama docker container.
+- Open-WebUI Service:
+  - https://github.com/open-webui/open-webui
+- Automatic1111 Stable Diffusion Service:
+  - https://github.com/AUTOMATIC1111/stable-diffusion-webui
+- SearXNG Service:
+  - https://docs.searxng.org/admin/installation-searxng.html
+- PewDiePie:
+  - https://github.com/pewdiepie-archdaemon
+- OpenCode:
+  - https://opencode.ai/docs/
+    - A codex-like CLI interface for conversing and working alongside an LLM. Works nicely with the local ollama docker container.
 
 ## Some notable repos I highly suggest you check out:
-- GPU-Unlock (Unlock FP/BF16 instructions issue rate on consumer 30 series cards): https://github.com/Zagitta/gpu-unlock
-- RexGlue-SDK (Converts Xbox360 PowerPC code into portable C++): https://github.com/rexglue/rexglue-sdk
-- GhidraMCP (Allow LLMs to access reverse engineering tools): https://github.com/LaurieWired/GhidraMCP
-- Ghidra (Allows YOU to access reverse engineering tools): https://github.com/NationalSecurityAgency/ghidra
-- VGPU-Unlock (Unlock virtual gpu functionality for consumer GPUs - albeit I havent had much success.. yet): https://github.com/DualCoder/vgpu_unlock
+- GPU-Unlock (Unlock FP/BF16 instructions issue rate on consumer 30 series cards):
+  - https://github.com/Zagitta/gpu-unlock
+- RexGlue-SDK (Converts Xbox360 PowerPC code into portable C++):
+  - https://github.com/rexglue/rexglue-sdk
+- GhidraMCP (Allow LLMs to access reverse engineering tools):
+  - https://github.com/LaurieWired/GhidraMCP
+- Ghidra (Allows YOU to access reverse engineering tools):
+  - https://github.com/NationalSecurityAgency/ghidra
+- VGPU-Unlock (Unlock virtual gpu functionality for consumer GPUs - albeit I havent had much success..):
+  - https://github.com/DualCoder/vgpu_unlock
