@@ -1,4 +1,5 @@
 services:
+  # ===== General AI Services =====
   open-webui:
     extends:
       file: ./open-webui/docker-compose.yml
@@ -11,6 +12,8 @@ services:
       service: ollama
     networks: 
       - selfhost_network
+
+  # ===== Memory Database Services =====
   memory-db:
     extends:
       file: ./memory-db/docker-compose.yml
@@ -26,6 +29,8 @@ services:
         condition: service_healthy
     networks:
       - selfhost_network
+
+  # ===== Web Browsing Services =====
   searxng:
     extends:
       file: ./searxng/docker-compose.yml
@@ -33,6 +38,7 @@ services:
     networks: 
       - selfhost_network
   
+  # ===== Etc =====
   sillytavern:
     extends:
       file: ./sillytavern/docker-compose.yml
@@ -40,6 +46,7 @@ services:
     networks: 
       - selfhost_network
 
+  # ===== Image-Gen Services =====
   comfyui:
     extends:
       file: ./comfyui/docker-compose.yml
@@ -47,6 +54,7 @@ services:
     networks: 
       - selfhost_network
 
+  # ===== Reverse Engineering Services =====
   ghidra-mcp:
     extends:
       file: ./ghidra-mcp/docker-compose.yml
