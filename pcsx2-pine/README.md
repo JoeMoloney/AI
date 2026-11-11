@@ -11,9 +11,14 @@ source builds.
 - `game_info`: title, game serial, CRC, game version, and PCSX2 build.
 - `read_memory`: read 1–256 bytes at a guest address.
 
-The server deliberately exposes no memory writes, save/load-state commands,
-execution control, or breakpoints. PINE itself does not expose CPU registers or
-breakpoints; a separate debugger-enabled PCSX2 build would be needed for those.
+The MCP bridge is intentionally read-only today, even though PCSX2's PINE
+protocol also supports 8/16/32/64-bit guest-memory writes and save/load-state
+commands (see `pcsx2/PINE.cpp`, opcodes `0x04`–`0x07` and `0x09`–`0x0a` in the
+PCSX2 source tree). These could be added later as separate, explicitly
+documented tools with strict validation and safeguards; state loads and memory
+writes can alter or disrupt a running game. PINE does not provide CPU register
+inspection, breakpoints, or pause/resume commands, so those require a separate
+debugger-oriented approach.
 
 ## PINE socket
 
