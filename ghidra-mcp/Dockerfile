@@ -57,6 +57,7 @@ FROM ghidra AS mcp
 USER root
 
 ARG GHIDRAMCP_REF=1e980252087b2479a21b9ca6d82d5829538651a7
+ARG EMOTIONENGINE_REF=4c787f8adcfa426031bd892c76ffc68368d3894e
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git python3 python3-venv \
@@ -70,6 +71,19 @@ RUN git init /opt/ghidramcp \
 RUN /opt/ghidra/support/gradle/gradlew --no-daemon \
       -p /opt/ghidramcp/extension buildExtension \
     && unzip -q /opt/ghidramcp/extension/dist/*.zip -d /opt/ghidra/Ghidra/Extensions
+
+# PS2 Emotion Engine support (R5900/MMI/VU analysis).
+RUN git init /opt/ghidra-emotionengine \
+    && git -C /opt/ghidra-emotionengine remote add origin https://github.com/chaoticgd/ghidra-emotionengine-reloaded.git \
+    && git -C /opt/ghidra-emotionengine fetch --depth 1 origin "${EMOTIONENGINE_REF}" \
+    && git -C /opt/ghidra-emotionengine checkout --detach FETCH_HEAD \
+    && /opt/ghidra/support/gradle/gradlew --no-daemon \
+       -p /opt/ghidra-emotionengine buildExtension \
+    && unzip -q /opt/ghidra-emotionengine/dist/*.zip -d /opt/ghidra/Ghidra/Extensions \
+    && cd /opt/ghidra/Ghidra/Extensions/ghidra-emotionengine/data/languages \
+    && /opt/ghidra/support/sleigh r5900.slaspec r5900.sla \
+    && chmod 644 r5900.sla \
+    && rm -rf /opt/ghidra-emotionengine
 
 RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir \
