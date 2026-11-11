@@ -79,8 +79,8 @@
       },
       "pcsx2-pine": {
         "type": "local",
-        "command": ["java", "-jar", "pcsx2-pine/target/pcsx2-pine-mcp-0.2.0-all.jar"],
-        "cwd": "."
+        "command": ["java", "-jar", "/mnt/HDD/git_stuff/my_git/AI/pcsx2-pine/target/pcsx2-pine-mcp-0.2.0-all.jar"],
+        "cwd": "/mnt/HDD/git_stuff/my_git/AI"
       }
     }
   }
