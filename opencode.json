@@ -34,10 +34,12 @@
       },
       "ghidra": {
         "type": "remote",
-        "url": "http://127.0.0.1:18081/mcp",
-        "timeout": {
-          "execution": 180000
-        }
+        "url": "http://127.0.0.1:18081/mcp"
+      },
+      "pcsx2-pine": {
+        "type": "local",
+        "command": ["java", "-jar", "pcsx2-pine/target/pcsx2-pine-mcp-0.2.0-all.jar"],
+        "cwd": "."
       }
     }
   }
