@@ -1,7 +1,8 @@
 # Xbox 360 Recomp Analysis MCP
 
 A read-only Java MCP intended to give future models self-describing tools for
-Xbox 360 static-recompilation projects. Guest PPC addresses are the join key
+Xbox 360 static-recompilation projects. It serves Streamable HTTP at `/mcp`.
+Guest PPC addresses are the join key
 between generated C++, Xenia traces, native profiles, and Ghidra analysis.
 
 ## Current scope
@@ -46,6 +47,14 @@ Java 17 or newer is required. From this directory, use the checked-in wrapper:
 ```
 
 The standalone JAR is `target/x360-recomp-mcp-0.1.0-all.jar`.
+
+The root AI repository's Compose stack builds this MCP as
+`x360-recomp-analysis` and serves it at `http://127.0.0.1:18084/mcp`. Configure
+`X360_ANALYSIS_CONFIG` to the host registry file and `X360_DATA_ROOT` to the
+read-only host directory containing every path referenced by that registry.
+Paths in the registry must also be valid at the same absolute paths inside the
+container. Start it from `start-services.sh` (option 7); view diagnostics with
+`docker compose logs -f x360-recomp-analysis` or the `logs` menu option.
 
 ## Planned extensions
 

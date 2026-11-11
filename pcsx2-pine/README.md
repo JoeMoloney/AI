@@ -1,9 +1,9 @@
 # PCSX2 PINE MCP
 
 A small, read-only Java MCP bridge to PCSX2's built-in PINE IPC on Linux. It
-uses the official MCP Java SDK over stdio and PCSX2's Unix-domain socket. It
-requires no PCSX2 patch and works with the Linux AppImage and normal Linux
-source builds.
+uses the official MCP Java SDK over Streamable HTTP and PCSX2's Unix-domain
+socket. It requires no PCSX2 patch and works with the Linux AppImage and normal
+Linux source builds.
 
 ## Tools
 
@@ -43,5 +43,11 @@ needed and builds a self-contained JAR:
 The unit tests use a fake Unix-domain socket and do not launch or modify PCSX2.
 The built server JAR is `target/pcsx2-pine-mcp-0.2.0-all.jar`.
 
-OpenCode's project configuration starts the JAR with `java -jar`. The bridge is
-read-only and has no external game-data or Docker dependency.
+The root AI repository's Compose stack builds this MCP as `pcsx2-pine` and serves
+it at `http://127.0.0.1:18083/mcp`. Set `PCSX2_RUNTIME_DIR` if the host socket
+directory differs from `/run/user/1000`; the directory is mounted read-only.
+The container runs as UID/GID 1000 by default so it can access the user-owned
+socket; set `PCSX2_UID` and `PCSX2_GID` for a different host account.
+Start it from `start-services.sh` (option 6), and inspect output with
+`docker compose logs -f pcsx2-pine` or the `logs` menu option. The bridge remains
+read-only.

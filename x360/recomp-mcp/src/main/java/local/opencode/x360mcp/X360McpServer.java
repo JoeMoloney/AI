@@ -2,7 +2,7 @@ package local.opencode.x360mcp;
 
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import java.io.IOException;
@@ -16,18 +16,27 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 /** Read-only MCP tools for navigating Xbox 360 recompiler artifacts. */
 public final class X360McpServer {
+    private static final AtomicLong CALL_IDS = new AtomicLong();
     private static final Pattern XENIA_TRACE_FLAGS = Pattern.compile(
             "DEFINE_bool\\((trace_functions|trace_function_coverage|trace_function_data|trace_function_references)");
 
     private X360McpServer() {}
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         Path config = configuredRegistryPath();
         TargetRegistry registry = TargetRegistry.load(config);
-        StdioServerTransportProvider transport = new StdioServerTransportProvider(McpJsonDefaults.getMapper());
+        int port = Integer.parseInt(System.getenv().getOrDefault("MCP_PORT", "18084"));
+        HttpServletStreamableServerTransportProvider transport = HttpServletStreamableServerTransportProvider.builder()
+                .jsonMapper(McpJsonDefaults.getMapper())
+                .mcpEndpoint("/mcp")
+                .build();
         McpServer.sync(transport)
                 .serverInfo("x360-recomp-analysis", "0.1.0")
                 .capabilities(McpSchema.ServerCapabilities.builder().tools(false).build())
@@ -35,7 +44,7 @@ public final class X360McpServer {
                         McpSchema.Tool.builder("list_targets", schema(Map.of(), List.of()))
                                 .description("List configured Xbox 360 original-XEX, Xenia, and native recompilation workspaces. Start here; never assume which game's artifacts are configured.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("list_targets", () -> {
                             List<Map<String, Object>> targets = new ArrayList<>();
                             for (Target target : registry.list()) {
                                 targets.add(Map.of(
@@ -55,7 +64,7 @@ public final class X360McpServer {
                                         List.of("target")))
                                 .description("Inspect one configured title's XEX identity, generated function index, native executable, and locally available Xenia tracing options. This is read-only and does not launch/build anything.")
                                 .build(),
-                        (exchange, request) -> call(() -> inspectTarget(
+                        (exchange, request) -> call("inspect_target", () -> inspectTarget(
                                 registry.require(stringArg(request.arguments(), "target")))))
                 .toolCall(
                         McpSchema.Tool.builder("search_functions", schema(
@@ -66,7 +75,7 @@ public final class X360McpServer {
                                         List.of("target", "query")))
                                 .description("Search the generated C++ function index by guest PPC address or symbol. Returns guest-address identity, generated source location, and source-file hash. Does not infer function meaning.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("search_functions", () -> {
                             FunctionIndex index = index(registry.require(stringArg(request.arguments(), "target")));
                             int limit = optionalInt(request.arguments(), "limit", 20);
                             FunctionIndex.SearchResult result = index.search(
@@ -86,7 +95,7 @@ public final class X360McpServer {
                                         List.of("target", "address")))
                                 .description("Look up a guest PPC address in generated static-recompilation C++. Returns the generated function source and line, a bounded excerpt, and source hash. Address is the join key for later Ghidra, Xenia trace, and profile evidence.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("lookup_function", () -> {
                             FunctionIndex index = index(registry.require(stringArg(request.arguments(), "target")));
                             FunctionIndex.LookupResult result = index.lookup(
                                     stringArg(request.arguments(), "address"),
@@ -114,7 +123,7 @@ public final class X360McpServer {
                                         List.of("target", "traceBasePath")))
                                 .description("Read-only import of Xenia's chunked function trace. Parses little-endian function headers, call counts, caller history, and optional instruction coverage; hashes each chunk and matches guest starts against generated C++. Does not modify or copy trace files. Requires the base path used by Xenia, whose output chunks use numbered extensions.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("import_xenia_trace", () -> {
                             Target target = registry.require(stringArg(request.arguments(), "target"));
                             FunctionIndex index = index(target);
                             XeniaTraceImporter.ImportResult imported = new XeniaTraceImporter().read(
@@ -137,6 +146,14 @@ public final class X360McpServer {
                             return result;
                         }))
                 .build();
+        Server server = new Server(port);
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        context.addServlet(new ServletHolder(transport), "/mcp");
+        server.setHandler(context);
+        server.start();
+        System.err.println("x360-recomp-analysis MCP listening on http://0.0.0.0:" + port + "/mcp; registry " + registry.configPath());
+        server.join();
     }
 
     private static Path configuredRegistryPath() {
@@ -261,14 +278,20 @@ public final class X360McpServer {
         return number.intValue();
     }
 
-    private static McpSchema.CallToolResult call(IoSupplier<Map<String, Object>> operation) {
+    private static McpSchema.CallToolResult call(String tool, IoSupplier<Map<String, Object>> operation) {
+        long id = CALL_IDS.incrementAndGet();
+        long started = System.nanoTime();
+        System.err.println("MCP tool call started tool=" + tool + " id=" + id);
         try {
             String json = McpJsonDefaults.getMapper().writeValueAsString(operation.get());
+            System.err.println("MCP tool call completed tool=" + tool + " id=" + id + " durationMs=" + ((System.nanoTime() - started) / 1_000_000));
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(json)))
                     .build();
         } catch (Exception exception) {
             String message = exception.getMessage() == null ? exception.toString() : exception.getMessage();
+            System.err.println("MCP tool call failed tool=" + tool + " id=" + id + " durationMs=" + ((System.nanoTime() - started) / 1_000_000)
+                    + " error=" + message);
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(message)))
                     .isError(true)

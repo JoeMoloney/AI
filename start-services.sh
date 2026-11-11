@@ -12,6 +12,8 @@
 #   3) comfyui      image generation (GPU)           :8188
 #   4) sillytavern  character / roleplay chat        :8000
 #   5) ghidra-mcp   headless Ghidra/MCP (127.0.0.1) :18081
+#   6) pcsx2-pine   PCSX2 PINE MCP (127.0.0.1)       :18083
+#   7) x360-recomp-analysis Xbox 360 MCP (127.0.0.1):18084
 #
 # presets:
 #   chat     open-webui
@@ -19,7 +21,7 @@
 #   art      open-webui + comfyui
 #   studio   open-webui + searxng + comfyui
 #   role     sillytavern
-#   re       ghidra-mcp
+#   re       ghidra-mcp + pcsx2-pine + x360-recomp-analysis
 #   all      everything except ghidra-mcp
 #
 # input: numbers and/or presets, space- or comma-separated
@@ -51,17 +53,18 @@ fi
 
 # --- static data ------------------------------------------------------------
 # menu order; ghidra-mcp last — it's a niche analysis service, not a daily service
-readonly SERVICES=( open-webui searxng comfyui sillytavern ghidra-mcp )
+readonly SERVICES=( open-webui searxng comfyui sillytavern ghidra-mcp pcsx2-pine x360-recomp-analysis )
 declare -A PORT=( [ollama]=11434 [memory-db]=5432 [memory-service]=18082 \
                   [open-webui]=3000 [searxng]=8080 [comfyui]=8188 \
-                  [sillytavern]=8000 [ghidra-mcp]=18081 )
+                  [sillytavern]=8000 [ghidra-mcp]=18081 [pcsx2-pine]=18083 \
+                  [x360-recomp-analysis]=18084 )
 readonly -a ENV_FILES=( memory-db/.env memory-db/.pkey \
                         open-webui/.env open-webui/.apiKey searxng/.env \
                         comfyui/.env sillytavern/.env ghidra-mcp/.env )
 
 # selection state — set by pick(), read in start_selected()
 declare -A ON=( [open-webui]=0 [searxng]=0 [comfyui]=0 \
-                [sillytavern]=0 [ghidra-mcp]=0 )
+                [sillytavern]=0 [ghidra-mcp]=0 [pcsx2-pine]=0 [x360-recomp-analysis]=0 )
 
 # --- helpers ----------------------------------------------------------------
 fail() {
@@ -94,6 +97,8 @@ draw() {
   L+=("  ${D}    3)${E}  ${B}comfyui${E}      ${C}http://localhost:8188${E}  ${D}image generation (GPU)${E}")
   L+=("  ${D}    4)${E}  ${B}sillytavern${E}  ${C}http://localhost:8000${E}  ${D}character / roleplay chat${E}")
   L+=("  ${D}    5)${E}  ${B}ghidra-mcp${E}   ${C}http://127.0.0.1:18081/mcp${E} ${D}headless Ghidra/MCP analysis${E}")
+  L+=("  ${D}    6)${E}  ${B}pcsx2-pine${E}  ${C}http://127.0.0.1:18083/mcp${E} ${D}PCSX2 PINE/MCP bridge${E}")
+  L+=("  ${D}    7)${E}  ${B}x360-recomp-analysis${E} ${C}http://127.0.0.1:18084/mcp${E} ${D}Xbox 360 analysis MCP${E}")
   L+=("")
   L+=("  ${B}presets:${E}")
   L+=("    ${D}chat${E}     open-webui")
@@ -101,7 +106,7 @@ draw() {
   L+=("    ${D}art${E}      open-webui + comfyui")
   L+=("    ${D}studio${E}   open-webui + searxng + comfyui")
   L+=("    ${D}role${E}     sillytavern")
-  L+=("    ${D}re${E}       ghidra-mcp")
+  L+=("    ${D}re${E}       ghidra-mcp + pcsx2-pine + x360-recomp-analysis")
   L+=("    ${D}all${E}      everything except ghidra-mcp")
   for line in "${L[@]}"; do
     printf '%s\n' "$line"
@@ -138,18 +143,20 @@ menu() {
         art)    pick open-webui comfyui ;;
         studio) pick open-webui searxng comfyui ;;
         role)   pick sillytavern ;;
-        re)     pick ghidra-mcp ;;
+        re)     pick ghidra-mcp pcsx2-pine x360-recomp-analysis ;;
         all)    pick open-webui searxng comfyui sillytavern ;;
         1)      pick open-webui ;;
         2)      pick searxng ;;
         3)      pick comfyui ;;
         4)      pick sillytavern ;;
         5)      pick ghidra-mcp ;;
+        6)      pick pcsx2-pine ;;
+        7)      pick x360-recomp-analysis ;;
         *)      bad+=" $tok" ;;
       esac
     done
     if [[ -n $bad ]]; then
-      printf '\n  ! unknown token(s):%s\n     valid: 1-5 · chat web art studio role re all · stop · logs · q to quit\n' "$bad"
+      printf '\n  ! unknown token(s):%s\n     valid: 1-7 · chat web art studio role re all · stop · logs · q to quit\n' "$bad"
       continue                        # show the menu again
     fi
     start_selected
@@ -186,8 +193,8 @@ start_selected() {
   for svc in "${SERVICES[@]}"; do
     if [[ ${ON[$svc]} -eq 1 ]]; then
       targets+=( "$svc" )
-      # ghidra-mcp is build-based (no image) → nothing to pull
-      [[ $svc == ghidra-mcp ]] || pull_targets+=( "$svc" )
+      # Local MCP images are built here rather than pulled.
+      [[ $svc == ghidra-mcp || $svc == pcsx2-pine || $svc == x360-recomp-analysis ]] || pull_targets+=( "$svc" )
     fi
   done
 
@@ -197,6 +204,10 @@ start_selected() {
 
   if [[ ${ON[ghidra-mcp]} -eq 1 && -z ${GHIDRA_BINARY:-} ]]; then
     printf '  ! set GHIDRA_BINARY in ghidra-mcp/.env to a file under /data first\n' >&2
+    return 11
+  fi
+  if [[ ${ON[x360-recomp-analysis]} -eq 1 && ! -f ${X360_ANALYSIS_CONFIG:-/home/ol-randals/.config/opencode/x360-targets.properties} ]]; then
+    printf '  ! set X360_ANALYSIS_CONFIG to the target registry properties file\n' >&2
     return 11
   fi
 
@@ -227,6 +238,8 @@ start_selected() {
       printf '    %-12s http://127.0.0.1:%s/mcp   %sheadless MCP endpoint — not a web page%s\n' \
               "$svc" "${PORT[$svc]}" "$D" "$E"
       printf '  %s    note: initial analysis may take time; check container health before using tools%s\n' "$D" "$E"
+    elif [[ $svc == pcsx2-pine || $svc == x360-recomp-analysis ]]; then
+      printf '    %-22s http://127.0.0.1:%s/mcp   %sStreamable HTTP MCP%s\n' "$svc" "${PORT[$svc]}" "$D" "$E"
     else
       printf '    %-12s http://localhost:%s\n' "$svc" "${PORT[$svc]}"
     fi
@@ -243,7 +256,7 @@ stop_all() {
   # down parses the same compose file as up, so it needs the same env vars for
   # the ${VAR}:/path volume specs to expand
   load_env
-  printf '\nstopping: all services in this project (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp)\n\n'
+  printf '\nstopping: all services in this project (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp pcsx2-pine x360-recomp-analysis)\n\n'
   if ! "${COMPOSE[@]}" down; then
     printf '  ! failed: %s down\n' "${COMPOSE[*]}" >&2
     return 11
@@ -260,7 +273,7 @@ show_logs() {
   # `docker compose up` (without -d) gives us. compose still parses the
   # ${VAR}:/path volume specs, so source env first (same reason stop does).
   load_env
-  printf '\nlogs: all services (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp)\n'
+  printf '\nlogs: all services (ollama memory-db memory-service open-webui searxng comfyui sillytavern ghidra-mcp pcsx2-pine x360-recomp-analysis)\n'
   printf '  (Ctrl-C to stop following)\n\n'
   "${COMPOSE[@]}" logs -f
   return $?

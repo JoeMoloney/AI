@@ -78,9 +78,12 @@
         "url": "http://127.0.0.1:18081/mcp"
       },
       "pcsx2-pine": {
-        "type": "local",
-        "command": ["java", "-jar", "/mnt/HDD/git_stuff/my_git/AI/pcsx2-pine/target/pcsx2-pine-mcp-0.2.0-all.jar"],
-        "cwd": "/mnt/HDD/git_stuff/my_git/AI"
+        "type": "remote",
+        "url": "http://127.0.0.1:18083/mcp"
+      },
+      "x360-recomp-analysis": {
+        "type": "remote",
+        "url": "http://127.0.0.1:18084/mcp"
       }
     }
   }

@@ -2,15 +2,20 @@ package local.opencode.pcsx2pine;
 
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 public final class PineMcpServer {
+    private static final AtomicLong CALL_IDS = new AtomicLong();
     private static final Map<String, Object> EMPTY_SCHEMA = Map.of(
             "type", "object",
             "properties", Map.of(),
@@ -18,9 +23,13 @@ public final class PineMcpServer {
 
     private PineMcpServer() {}
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         PineClient pine = new PineClient();
-        StdioServerTransportProvider transport = new StdioServerTransportProvider(McpJsonDefaults.getMapper());
+        int port = Integer.parseInt(System.getenv().getOrDefault("MCP_PORT", "18083"));
+        HttpServletStreamableServerTransportProvider transport = HttpServletStreamableServerTransportProvider.builder()
+                .jsonMapper(McpJsonDefaults.getMapper())
+                .mcpEndpoint("/mcp")
+                .build();
         McpServer.sync(transport)
                 .serverInfo("pcsx2-pine", "0.2.0")
                 .capabilities(McpSchema.ServerCapabilities.builder().tools(false).build())
@@ -28,7 +37,7 @@ public final class PineMcpServer {
                         McpSchema.Tool.builder("status", EMPTY_SCHEMA)
                                 .description("Read PCSX2's PINE emulator status (read-only).")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("status", () -> {
                             PineClient.EmulatorStatus status = pine.getStatus();
                             Map<String, Object> result = new LinkedHashMap<>();
                             result.put("socket", pine.socketPath().toString());
@@ -40,7 +49,7 @@ public final class PineMcpServer {
                         McpSchema.Tool.builder("game_info", EMPTY_SCHEMA)
                                 .description("Read the running game's title, serial, CRC, version, and PCSX2 build version through PINE.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("game_info", () -> {
                             PineClient.GameInfo info = pine.getGameInfo();
                             Map<String, Object> result = new LinkedHashMap<>();
                             result.put("socket", pine.socketPath().toString());
@@ -63,7 +72,7 @@ public final class PineMcpServer {
                                         "additionalProperties", false))
                                 .description("Read up to 256 bytes from a 32-bit PS2 guest address through PINE. This tool cannot write memory.")
                                 .build(),
-                        (exchange, request) -> call(() -> {
+                        (exchange, request) -> call("read_memory", () -> {
                             Object addressValue = request.arguments().get("address");
                             Object lengthValue = request.arguments().get("length");
                             if (!(addressValue instanceof Number addressNumber) || !(lengthValue instanceof Number lengthNumber)) {
@@ -78,16 +87,30 @@ public final class PineMcpServer {
                                     "hex", toHex(bytes));
                         }))
                 .build();
+        Server server = new Server(port);
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        context.addServlet(new ServletHolder(transport), "/mcp");
+        server.setHandler(context);
+        server.start();
+        System.err.println("pcsx2-pine MCP listening on http://0.0.0.0:" + port + "/mcp; PINE socket " + pine.socketPath());
+        server.join();
     }
 
-    private static McpSchema.CallToolResult call(IoSupplier<Map<String, Object>> operation) {
+    private static McpSchema.CallToolResult call(String tool, IoSupplier<Map<String, Object>> operation) {
+        long id = CALL_IDS.incrementAndGet();
+        long started = System.nanoTime();
+        System.err.println("MCP tool call started tool=" + tool + " id=" + id);
         try {
             String json = McpJsonDefaults.getMapper().writeValueAsString(operation.get());
+            System.err.println("MCP tool call completed tool=" + tool + " id=" + id + " durationMs=" + ((System.nanoTime() - started) / 1_000_000));
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(json)))
                     .build();
         } catch (Exception exception) {
             String message = exception.getMessage() == null ? exception.toString() : exception.getMessage();
+            System.err.println("MCP tool call failed tool=" + tool + " id=" + id + " durationMs=" + ((System.nanoTime() - started) / 1_000_000)
+                    + " error=" + message);
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(message)))
                     .isError(true)

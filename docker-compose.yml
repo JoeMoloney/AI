@@ -62,6 +62,53 @@ services:
     networks:
       - selfhost_network
 
+  pcsx2-pine:
+    build:
+      context: .
+      dockerfile: pcsx2-pine/Dockerfile
+    image: pcsx2-pine-mcp:local
+    container_name: pcsx2-pine
+    restart: unless-stopped
+    init: true
+    environment:
+      MCP_PORT: 18083
+      PCSX2_PINE_SOCKET: /pine/pcsx2.sock
+    # PINE's host socket is owner-restricted; match the desktop user by default.
+    user: "${PCSX2_UID:-1000}:${PCSX2_GID:-1000}"
+    volumes:
+      - ${PCSX2_RUNTIME_DIR:-/run/user/1000}:/pine:ro
+    ports:
+      - "127.0.0.1:18083:18083"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [selfhost_network]
+
+  x360-recomp-analysis:
+    build:
+      context: .
+      dockerfile: x360/recomp-mcp/Dockerfile
+    image: x360-recomp-analysis-mcp:local
+    container_name: x360-recomp-analysis
+    restart: unless-stopped
+    init: true
+    environment:
+      MCP_PORT: 18084
+      X360_ANALYSIS_CONFIG: /config/targets.properties
+    volumes:
+      - ${X360_ANALYSIS_CONFIG:-/home/ol-randals/.config/opencode/x360-targets.properties}:/config/targets.properties:ro
+      - ${X360_DATA_ROOT:-/mnt/HDD/git_stuff}:${X360_DATA_ROOT:-/mnt/HDD/git_stuff}:ro
+    ports:
+      - "127.0.0.1:18084:18084"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [selfhost_network]
+
 networks:
   selfhost_network:
     name: selfhost_network
